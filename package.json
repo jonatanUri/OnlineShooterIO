@@ -1,0 +1,25 @@
+{
+  "name": "onlineshooterio",
+  "version": "1.0.0",
+  "description": "This project is a Node.JS server that runs a small casual 2D MOBA shooter.",
+  "main": "index.js",
+  "dependencies": {
+    "express": "^4.17.1",
+    "mysql": "^2.18.1",
+    "socket.io": "^2.3.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jonatanUri/OnlineShooterIO.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/jonatanUri/OnlineShooterIO/issues"
+  },
+  "homepage": "https://github.com/jonatanUri/OnlineShooterIO#readme"
+}
