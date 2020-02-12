@@ -1,10 +1,85 @@
 <head>
   <title>Online Shooter IO</title>
   <script src="https://cdn.socket.io/socket.io-1.4.5.js"></script>
-  <script type="text/javascript">
-    var socket = io();
-  </script>
+
 </head>
 <body>
-
+  <canvas id="display" width="800" height="600" style="border: 1px solid black"></canvas>
+  <input type="text" id="nameBox" name="nameBox" value="unnamed">
 </body>
+
+<script type="text/javascript">
+  var display = document.getElementById("display");
+  var ctx = display.getContext("2d");
+  var socket = io();
+  var selfid;
+  socket.on("selfid", function(data){
+    selfid = data.id;
+  })
+
+  socket.on("newPosition", function(data){
+    ctx.clearRect(0, 0, display.width, display.height);
+    for (var i = 0; i < data.player.length; i++){
+      if(data.player[i].id == selfid){
+        ctx.fillStyle = "#35E43A";
+      }else {
+        ctx.fillStyle = "#FB2952";
+      }
+      ctx.font = "10px Arial";
+      ctx.fillText(data.player[i].name,
+                   data.player[i].x + (data.player[i].width/2) - (ctx.measureText(data.player[i].name).width / 2),
+                   data.player[i].y-6);
+      ctx.fillRect(data.player[i].x - data.player[i].width,
+                   data.player[i].y - data.player[i].height,
+                   data.player[i].width,
+                   data.player[i].height);
+    }
+
+    ctx.fillStyle = "#000000";
+    for (var i = 0; i < data.bullet.length; i++) {
+      ctx.fillRect(data.bullet[i].x - data.bullet[i].width,
+                   data.bullet[i].y - data.bullet[i].height,
+                   data.bullet[i].width,
+                   data.bullet[i].height);
+    }
+
+  });
+
+  document.onkeydown = function(event){
+    if(event.keyCode === 68){ //D
+      socket.emit('keyPress', {inputId: 'right', state:true});
+    }
+    else if(event.keyCode === 83){ //S
+      socket.emit('keyPress', {inputId: 'down', state:true});
+    }
+    else if(event.keyCode === 65){ //A
+      socket.emit('keyPress', {inputId: 'left', state:true});
+    }
+    else if(event.keyCode === 87){ //W
+      socket.emit('keyPress', {inputId: 'up', state:true});
+    }
+  }
+  document.onkeyup = function(event){
+    if(event.keyCode === 68){ //D
+      socket.emit('keyPress', {inputId: 'right', state:false});
+    }
+    else if(event.keyCode === 83){ //S
+      socket.emit('keyPress', {inputId: 'down', state:false});
+    }
+    else if(event.keyCode === 65){ //A
+      socket.emit('keyPress', {inputId: 'left', state:false});
+    }
+    else if(event.keyCode === 87){ //W
+      socket.emit('keyPress', {inputId: 'up', state:false});
+    }
+  }
+
+  function emitNewName(){
+    socket.emit('newName', nameBox.value);
+  }
+
+  var nameBox = document.getElementById("nameBox");
+  nameBox.addEventListener("change", emitNewName);
+  nameBox.addEventListener("onkeypress", emitNewName);
+
+</script>
