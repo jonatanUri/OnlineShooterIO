@@ -9,6 +9,7 @@ app.get('/', function(req, res){
   res.sendFile(__dirname + '/client/index.html');
 });
 app.use('/client', express.static(__dirname + '/client'));
+app.use('/client', express.static(__dirname + '/client/js'));
 serv.listen(2000);
 
 (async () => {
