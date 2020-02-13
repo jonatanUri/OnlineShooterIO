@@ -1,6 +1,7 @@
 var express = require('express');
 var app = express();
 var serv = require('http').Server(app);
+
 const publicIp = require('public-ip');
 const localIp = require("ip");
 
@@ -20,8 +21,8 @@ var SOCKET_LIST = {};
 var Entity = function(){
   var self = {
     id:     "",
-    x:      250,
-    y:      250,
+    x:      0,
+    y:      0,
     width:  0,
     height: 0,
     speedX: 0,
@@ -47,8 +48,6 @@ var Player = function(id){
 
   self.id=            id;
   self.name=           "unnamed";
-  self.x=              250;
-  self.y=              250;
   self.width=          20;
   self.height=         20;
   self.hp=             100;
@@ -63,11 +62,11 @@ var Player = function(id){
   self.speedX=         0;
   self.speedY=         0;
   self.maxSpeed=       5;
-  self.acceleration=   0.5;
+  self.acceleration=   1;
 
   var super_update = self.update;
   self.update = function () {
-    self.updatePosition();
+    self.updateSpeed();
     super_update();
 
     if (self.pressingAttack){
@@ -86,7 +85,7 @@ var Player = function(id){
     bullet.y = self.y;
   }
 
-  self.updatePosition = function(){
+  self.updateSpeed = function(){
     if(self.pressingRight){
       if(self.speedX < self.maxSpeed){
         self.speedX += self.acceleration;
@@ -149,9 +148,6 @@ var Player = function(id){
         }
       }
     }
-
-    self.x += self.speedX;
-    self.y += self.speedY;
   }
   self.getInitPack = function(){
       return {
@@ -180,9 +176,8 @@ var Player = function(id){
       }
   }
 
-
-
   Player.list[id] = self;
+  initPack.player.push(self.getInitPack());
   return self;
 }
 Player.list = {};
@@ -209,11 +204,28 @@ Player.onConnect = function(socket) {
   socket.on('newName', function(data){
     player.name = data;
   });
+
+  socket.emit('init', {
+    selfId: socket.id,
+    player: Player.getAllInitpack(),
+    bullet: Bullet.getAllInitpack(),
+  })
+
 }
+
+Player.getAllInitpack = function(){
+  var players = [];
+  for(var i in Player.list){
+    players.push(Player.list[i].getInitPack());
+  }
+  return players;
+}
+
 Player.onDisconnect = function(socket){
   delete Player.list[socket.id];
-  console.log('player deleted');
+  removePack.player.push(socket.id);
 }
+
 Player.update = function() {
   var packet = [];
   for (var id in Player.list){
@@ -251,7 +263,13 @@ var Bullet = function(parent, angle){
       if(self.getDistance(player) < player.width/2+ self.width/2 && self.parent !== player.id){
         player.hp -= self.damage;
         if (player.hp<0){
-          Player.list[self.parent].score++;
+          var shooter = Player.list[self.parent];
+          if (shooter){
+            shooter.score++;
+          }
+          player.ph = player.hpMax;
+          player.x = Math.random() * 500; //NEED REFACTOR (width, height)
+          player.y = Math.random() * 500; //-
         }
         self.toRemove = true;
       }
@@ -279,6 +297,7 @@ var Bullet = function(parent, angle){
   }
 
   Bullet.list[self.id] = self;
+  initPack.bullet.push(self.getInitPack());
   return self;
 }
 Bullet.list = {};
@@ -290,6 +309,7 @@ Bullet.update = function() {
     bullet.update();
     if(bullet.toRemove){
       delete Bullet.list[id];
+      removePack.bullet.push(bullet.id);
     } else {
       packet.push(bullet.getUpdatePack());
     }
@@ -297,10 +317,16 @@ Bullet.update = function() {
   return packet;
 }
 
+Bullet.getAllInitpack = function(){
+  var bullets = [];
+  for(var id in Bullet.list){
+    bullets.push(Bullet.list[id].getInitPack());
+  }
+}
+
 var io = require('socket.io')(serv,{});
 io.sockets.on('connection', function(socket){
   socket.id = Math.random();
-  socket.emit('selfid', socket.id);
   SOCKET_LIST[socket.id] = socket;
   console.log('socket ' + socket.id + ' connected');
 
@@ -312,8 +338,10 @@ io.sockets.on('connection', function(socket){
     Player.onDisconnect(socket);
   });
 
-
 });
+
+var initPack = {player:[], bullet:[]};
+var removePack = {player:[], bullet:[]};
 
 setInterval(function(){
   var packet = {
@@ -322,7 +350,15 @@ setInterval(function(){
   }
 
   for (var id in SOCKET_LIST){
-    SOCKET_LIST[id].emit('update', packet);
+    var socket = SOCKET_LIST[id];
+    socket.emit('init', initPack);
+    socket.emit('update', packet);
+    socket.emit('remove', removePack);
   }
 
-}, 1000/45);
+  initPack.player = [];
+  initPack.bullet = [];
+  removePack.player = [];
+  removePack.bullet = [];
+
+}, 1000/40);
