@@ -52,6 +52,8 @@ var Player = function(id){
   self.width=          20;
   self.height=         20;
   self.hp=             100;
+  self.hpMax=          100;
+  self.score=          0;
   self.pressingRight=  false;
   self.pressingLeft=   false;
   self.pressingUp=     false;
@@ -69,6 +71,11 @@ var Player = function(id){
     super_update();
 
     if (self.pressingAttack){
+      /*  ---- "SHOTGUN" ----
+      for (var i = -3; i < 3; i++){
+        self.shootBullet(i*10 + self.mouseAngle)
+      }
+      */
       self.shootBullet(self.mouseAngle)
     }
   }
@@ -146,12 +153,40 @@ var Player = function(id){
     self.x += self.speedX;
     self.y += self.speedY;
   }
+  self.getInitPack = function(){
+      return {
+        id:     self.id,
+        name:   self.name,
+        x:      self.x,
+        y:      self.y,
+        width:  self.width,
+        height: self.height,
+        hp:     self.hp,
+        hpMax:  self.hpMax,
+        score:  self.score
+      }
+  }
+  self.getUpdatePack = function(){
+      return {
+        id:     self.id,
+        name:   self.name,
+        x:      self.x,
+        y:      self.y,
+        width:  self.width,
+        height: self.height,
+        hp:     self.hp,
+        hpMax:  self.hpMax,
+        score:  self.score
+      }
+  }
+
+
 
   Player.list[id] = self;
   return self;
 }
-
 Player.list = {};
+
 Player.onConnect = function(socket) {
   var player = Player(socket.id);
 
@@ -184,15 +219,7 @@ Player.update = function() {
   for (var id in Player.list){
     var player = Player.list[id];
     player.update();
-    packet.push({
-      id:     player.id,
-      name:   player.name,
-      x:      player.x,
-      y:      player.y,
-      width:  player.width,
-      height: player.height,
-      hp:     player.hp
-    });
+    packet.push(player.getUpdatePack());
   }
   return packet;
 }
@@ -223,12 +250,34 @@ var Bullet = function(parent, angle){
       var player = Player.list[i];
       if(self.getDistance(player) < player.width/2+ self.width/2 && self.parent !== player.id){
         player.hp -= self.damage;
-
+        if (player.hp<0){
+          Player.list[self.parent].score++;
+        }
         self.toRemove = true;
       }
     }
 
   }
+  self.getInitPack = function() {
+    return {
+      id:     self.id,
+      x:      self.x,
+      y:      self.y,
+      width:  self.width,
+      height: self.height,
+    }
+  }
+
+  self.getUpdatePack = function() {
+    return {
+      id:     self.id,
+      x:      self.x,
+      y:      self.y,
+      width:  self.width,
+      height: self.height,
+    }
+  }
+
   Bullet.list[self.id] = self;
   return self;
 }
@@ -242,13 +291,7 @@ Bullet.update = function() {
     if(bullet.toRemove){
       delete Bullet.list[id];
     } else {
-      packet.push({
-        id:     bullet.id,
-        x:      bullet.x,
-        y:      bullet.y,
-        width:  bullet.width,
-        height: bullet.height,
-      });
+      packet.push(bullet.getUpdatePack());
     }
   }
   return packet;
@@ -279,7 +322,7 @@ setInterval(function(){
   }
 
   for (var id in SOCKET_LIST){
-    SOCKET_LIST[id].emit('newPosition', packet);
+    SOCKET_LIST[id].emit('update', packet);
   }
 
 }, 1000/45);

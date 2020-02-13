@@ -9,15 +9,49 @@
 </body>
 
 <script type="text/javascript">
-  var display = document.getElementById("display");
-  var ctx = display.getContext("2d");
   var socket = io();
-  var selfid;
+  var selfid = 0;
   socket.on("selfid", function(data){
     selfid = data.id;
   })
 
-  socket.on("newPosition", function(data){
+  var display = document.getElementById("display");
+  var ctx = display.getContext("2d");
+
+  var Player = function(pack){
+		var self = {};
+		self.id = pack.id;
+		self.number = pack.number;
+		self.x = pack.x;
+		self.y = pack.y;
+		Player.list[self.id] = self;
+		return self;
+  }
+  Player.list = {};
+
+
+  var Bullet = function(pack){
+		var self = {};
+		self.id = pack.id;
+		self.x = pack.x;
+		self.y = pack.y;
+		Bullet.list[self.id] = self;
+		return self;
+	}
+	Bullet.list = {};
+
+
+
+  socket.on('init',function(data){
+		for(var i = 0 ; i < data.player.length; i++){
+			new Player(data.player[i]);
+		}
+		for(var i = 0 ; i < data.bullet.length; i++){
+			new Bullet(data.bullet[i]);
+		}
+	});
+
+  socket.on("update", function(data){
     ctx.clearRect(0, 0, display.width, display.height);
     for (var i = 0; i < data.player.length; i++){
       if(data.player[i].id == selfid){
