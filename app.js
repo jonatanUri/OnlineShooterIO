@@ -55,36 +55,40 @@ var Entity = function(){
 var Player = function(id){
   var self = Entity();
 
-  self.id=            id;
-  self.name=           "unnamed";
-  self.width=          20;
-  self.height=         20;
-  self.hp=             100;
-  self.hpMax=          100;
-  self.score=          0;
-  self.pressingRight=  false;
-  self.pressingLeft=   false;
-  self.pressingUp=     false;
-  self.pressingDown=   false;
-  self.pressingAttack= false;
-  self.mouseAngle=     0;
-  self.speedX=         0;
-  self.speedY=         0;
-  self.maxSpeed=       3;
-  self.acceleration=   0.2;
+  self.id =             id;
+  self.name =           "unnamed";
+  self.width =          20;
+  self.height =         20;
+  self.hp =             100;
+  self.hpMax =          100;
+  self.score =          0;
+  self.pressingRight =  false;
+  self.pressingLeft =   false;
+  self.pressingUp =     false;
+  self.pressingDown =   false;
+  self.pressingAttack = false;
+  self.mouseAngle =     0;
+  self.speedX =         0;
+  self.speedY =         0;
+  self.maxSpeed =       3;
+  self.acceleration =   0.2;
+  self.attackTimer =    0;
+  self.attackRate =     1000 / 100;
 
   var super_update = self.update;
   self.update = function () {
     self.updateSpeed();
     super_update();
 
-    if (self.pressingAttack){
+    self.attackTimer++;
+    if (self.pressingAttack && self.attackTimer >= self.attackRate){
       /*  ---- "SHOTGUN" ----
       for (var i = -3; i < 3; i++){
         self.shootBullet(i*10 + self.mouseAngle)
       }
       */
-      self.shootBullet(self.mouseAngle)
+      self.shootBullet(self.mouseAngle);
+      self.attackTimer = 0;
     }
   };
 
