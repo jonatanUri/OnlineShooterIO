@@ -19,6 +19,9 @@ serv.listen(2000);
 
 var SOCKET_LIST = {};
 
+var initPack = {player:[], bullet:[], wall:[]};
+var removePack = {player:[], bullet:[], wall:[]};
+
 var Entity = function(){
   var self = {
     id:     "",
@@ -88,7 +91,20 @@ var Wall = function (startPoint, width, height) {
 };
 Wall.list = {};
 
+Wall.getAllInitpack = function(){
+  var walls = [];
+  for(var id in Wall.list){
+    walls.push(Wall.list[id].getInitPack());
+  }
+  return walls;
+};
+
 var createNewMap = function () {
+  for (var id in Wall.list){
+    delete Wall.list[id];
+    removePack.wall.push(id);
+  }
+
   var topWall = Wall({x: -200, y: -200}, 2000, 10);
   var rightWall = Wall(topWall.getEndPoint(), 10, 1000);
   var bottomWall = Wall(rightWall.getEndPoint(), 2000, 10);
@@ -269,6 +285,7 @@ Player.onConnect = function(socket) {
     selfId: socket.id,
     player: Player.getAllInitpack(),
     bullet: Bullet.getAllInitpack(),
+    wall:   Wall.getAllInitpack(),
   })
 
 };
@@ -382,6 +399,7 @@ Bullet.getAllInitpack = function(){
   for(var id in Bullet.list){
     bullets.push(Bullet.list[id].getInitPack());
   }
+  return bullets;
 };
 
 var io = require('socket.io')(serv,{});
@@ -399,9 +417,6 @@ io.sockets.on('connection', function(socket){
   });
 
 });
-
-var initPack = {player:[], bullet:[], wall:[]};
-var removePack = {player:[], bullet:[]};
 
 setInterval(function(){
   var packet = {
@@ -421,5 +436,6 @@ setInterval(function(){
   initPack.wall = [];
   removePack.player = [];
   removePack.bullet = [];
+  removePack.wall = [];
 
 }, 1000/40);

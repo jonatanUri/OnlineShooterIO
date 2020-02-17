@@ -44,6 +44,26 @@ var Player = function(initPack){
 };
 Player.list = {};
 
+var Wall = function (initPack) {
+  var self = {};
+  self.id =     initPack.id;
+  self.x =      initPack.x;
+  self.y =      initPack.y;
+  self.width =  initPack.width;
+  self.height = initPack.height;
+
+  self.draw = function () {
+    var x = self.x - Player.list[selfId].x + WIDTH/2;
+    var y = self.y - Player.list[selfId].y + HEIGHT/2;
+    ctx.fillStyle = "#000000";
+    ctx.fillRect(x, y, self.width, self.height);
+  }
+
+  Wall.list[self.id] = self;
+  return self;
+};
+Wall.list = {};
+
 
 var Bullet = function(initPack){
   var self = {};
@@ -74,6 +94,11 @@ socket.on('init',function(data){
 
   for(var i = 0 ; i < data.player.length; i++){
     new Player(data.player[i]);
+  }
+  if(data.wall){
+    for(var i = 0; i < data.wall.length; i++){
+      new Wall(data.wall[i]);
+    }
   }
   if(data.bullet){
     for(var i = 0 ; i < data.bullet.length; i++){
@@ -115,7 +140,7 @@ socket.on("update", function(data){
   }
   for (var i = 0; i < data.bullet.length; i++) {
     var packet = data.bullet[i];
-    var bullet = Bullet.list[packet.id]
+    var bullet = Bullet.list[packet.id];
     if (bullet){
       if(packet.x !== undefined){
         bullet.x = packet.x;
@@ -138,7 +163,10 @@ socket.on('remove', function(data) {
     delete Player.list[data.player[i]];
   }
   for (var i = 0; i < data.bullet.length; i++) {
-    delete Bullet.list[data.bullet[i]]
+    delete Bullet.list[data.bullet[i]];
+  }
+  for (var i = 0; i < data.wall.length; i++){
+    delete Wall.list[data.wall[i]];
   }
 });
 
@@ -148,11 +176,15 @@ setInterval(function(){
   ctx.clearRect(0, 0, WIDTH, HEIGHT);
   drawScore();
   drawPositon();
+
   for(var i in Player.list){
     Player.list[i].draw();
   }
   for(var i in Bullet.list){
     Bullet.list[i].draw();
+  }
+  for(var i in Wall.list){
+    Wall.list[i].draw();
   }
 }, 1000/45);
 
