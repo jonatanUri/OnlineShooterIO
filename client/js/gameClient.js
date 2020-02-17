@@ -37,11 +37,11 @@ var Player = function(initPack){
 
     ctx.fillStyle = '#808080';
     ctx.fillRect(x - self.width/2, y - self.height/2, self.width, self.height);
-  }
+  };
 
   Player.list[self.id] = self;
   return self;
-}
+};
 Player.list = {};
 
 
@@ -58,11 +58,11 @@ var Bullet = function(initPack){
     var y = self.y - Player.list[selfId].y + HEIGHT/2;
     ctx.fillStyle = "#000000";
     ctx.fillRect(x - self.width/2, y - self.height/2, self.width, self.height);
-  }
+  };
 
   Bullet.list[self.id] = self;
   return self;
-}
+};
 Bullet.list = {};
 
 var selfId = null;
@@ -159,7 +159,7 @@ setInterval(function(){
 var drawScore = function(){
     ctx.fillStyle = '#404040';
     ctx.fillText('Score: ' + Player.list[selfId].score, 3, 10)
-}
+};
 
 var drawPositon = function(){
   ctx.fillStyle = "#404040"
@@ -195,16 +195,16 @@ document.onkeyup = function(event){
   else if(event.keyCode === 87){ //W
     socket.emit('keyPress', {inputId: 'up', state:false});
   }
-}
+};
 document.onmousedown = function(event){
   socket.emit('keyPress', {inputId: 'attack', state:true});
-}
+};
 document.onmouseup = function(event){
   socket.emit('keyPress', {inputId: 'attack', state: false});
-}
+};
 document.onmousemove = function(event){
   var x = -WIDTH/2 + event.clientX -8;
   var y = -HEIGHT/2 + event.clientY -8;
   var angle = Math.atan2(y,x) / Math.PI * 180;
   socket.emit('keyPress', {inputId: 'mouseAngle', state: angle});
-}
+};
