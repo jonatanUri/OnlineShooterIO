@@ -166,7 +166,7 @@ var drawPositon = function(){
   ctx.fillText('x: ' + Player.list[selfId].x +
               ' y: ' + Player.list[selfId].y,
                3, HEIGHT - 5);
-}
+};
 
 document.onkeydown = function(event){
   if(event.keyCode === 68){ //D
@@ -181,7 +181,7 @@ document.onkeydown = function(event){
   else if(event.keyCode === 87){ //W
     socket.emit('keyPress', {inputId: 'up', state:true});
   }
-}
+};
 document.onkeyup = function(event){
   if(event.keyCode === 68){ //D
     socket.emit('keyPress', {inputId: 'right', state:false});
