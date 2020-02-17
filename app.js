@@ -52,6 +52,52 @@ var Entity = function(){
   return self;
 };
 
+var Wall = function (startPoint, width, height) {
+  var self =        Entity();
+  self.id =         Math.random();
+  self.startPoint = startPoint;
+  self.x =          startPoint.x;
+  self.y =          startPoint.y;
+  self.width =      width;
+  self.height =     height;
+
+  self.getInitPack = function () {
+    return {
+      x: self.x,
+      y: self.y,
+      width: self.width,
+      height: self.height
+    }
+  };
+
+  self.getEndPoint = function() {
+    return{
+      x: self.x + self.width,
+      y: self.y + self.height,
+    }
+  };
+
+  self.endAtPoint = function(point) {
+    self.x = point.x - width;
+    self.y = point.y - height;
+  };
+
+  Wall.list[self.id] = self;
+  initPack.wall.push(self.getInitPack());
+  return self;
+};
+Wall.list = {};
+
+var createNewMap = function () {
+  var topWall = Wall({x: -200, y: -200}, 2000, 10);
+  var rightWall = Wall(topWall.getEndPoint(), 10, 1000);
+  var bottomWall = Wall(rightWall.getEndPoint(), 2000, 10);
+  bottomWall.endAtPoint(rightWall.getEndPoint());
+  var leftWall = Wall(topWall.startPoint, 10, 1000);
+};
+
+createNewMap();
+
 var Player = function(id){
   var self = Entity();
 
@@ -354,7 +400,7 @@ io.sockets.on('connection', function(socket){
 
 });
 
-var initPack = {player:[], bullet:[]};
+var initPack = {player:[], bullet:[], wall:[]};
 var removePack = {player:[], bullet:[]};
 
 setInterval(function(){
@@ -372,6 +418,7 @@ setInterval(function(){
 
   initPack.player = [];
   initPack.bullet = [];
+  initPack.wall = [];
   removePack.player = [];
   removePack.bullet = [];
 
