@@ -36,9 +36,17 @@ var Entity = function(){
     self.x += self.speedX;
     self.y += self.speedY;
   };
+  self.isCollidingWithRect = function(rect){
+    return (self.x < rect.x + rect.width &&
+            self.x + self.width > rect.x &&
+            self.y < rect.y + rect.height &&
+            self.y + self.height > rect.y)
+  };
+
   self.getDistance = function(pt){
-    return Math.sqrt(Math.pow(self.x + (self.width/2) - pt.x + (pt.width/2)) +
-                        Math.pow(self.y + (self.height/2) - pt.y + (pt.height/2)));
+    var distance = Math.sqrt(Math.pow(self.x + (self.width/2) - pt.x + (pt.width/2), 2) +
+                                Math.pow(self.y + (self.height/2) - pt.y + (pt.height/2), 2));
+    return distance;
   };
 
   return self;
@@ -62,8 +70,8 @@ var Player = function(id){
   self.mouseAngle=     0;
   self.speedX=         0;
   self.speedY=         0;
-  self.maxSpeed=       5;
-  self.acceleration=   1;
+  self.maxSpeed=       3;
+  self.acceleration=   0.2;
 
   var super_update = self.update;
   self.update = function () {
@@ -242,7 +250,7 @@ var Bullet = function(parent, angle){
   var self = Entity();
   self.id =       Math.random();
   self.parent =   parent;
-  self.maxSpeed = 5;
+  self.maxSpeed = 6;
   self.width =    5;
   self.height =   5;
   self.damage =   10;
@@ -262,14 +270,14 @@ var Bullet = function(parent, angle){
 
     for (var i in Player.list) {
       var player = Player.list[i];
-      if(self.getDistance(player) < player.width/2+ self.width/2 && self.parent !== player.id){
+      if(self.isCollidingWithRect(player) && self.parent !== player.id){
         player.hp -= self.damage;
         if (player.hp<0){
           var shooter = Player.list[self.parent];
           if (shooter){
             shooter.score++;
           }
-          player.ph = player.hpMax;
+          player.hp = player.hpMax;
           player.x = Math.random() * 500; //NEED REFACTOR (width, height)
           player.y = Math.random() * 500; //-
         }
