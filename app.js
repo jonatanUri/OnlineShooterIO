@@ -318,7 +318,7 @@ var Bullet = function(parent, angle){
   var self = Entity();
   self.id =       Math.random();
   self.parent =   parent;
-  self.maxSpeed = 6;
+  self.maxSpeed = 8;
   self.width =    5;
   self.height =   5;
   self.damage =   10;
@@ -335,6 +335,10 @@ var Bullet = function(parent, angle){
       self.toRemove = true;
     }
     super_update();
+
+    self.speedX /= 1.005;
+    self.speedY /= 1.005;
+    self.damage /= 1.015;
 
     for (var i in Player.list) {
       var player = Player.list[i];
