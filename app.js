@@ -158,8 +158,8 @@ var Player = function(id){
 
   self.shootBullet = function(angle){
     var bullet = Bullet(self.id, angle);
-    bullet.x = self.x;
-    bullet.y = self.y;
+    bullet.x = self.x + self.width/2;
+    bullet.y = self.y + self.height/2;
   };
 
   self.updateSpeed = function(){
