@@ -142,6 +142,7 @@ var Player = function(id){
   self.update = function () {
     self.updateSpeed();
     super_update();
+    self.handleWallCollision();
 
     self.attackTimer++;
     if (self.pressingAttack && self.attackTimer >= self.attackRate){
@@ -225,6 +226,61 @@ var Player = function(id){
       }
     }
   };
+
+  var distanceCounter = 1;
+  var DIRECTION = ["UP", "RIGHT", "DOWN", "LEFT"];
+  DIRECTION.counter = 0;
+  DIRECTION.Next = function () {
+    if (DIRECTION.counter++ > 3){
+      DIRECTION.counter = 0;
+      distanceCounter++;
+    }
+    return DIRECTION[DIRECTION.counter];
+  };
+
+  self.handleWallCollision = function () {
+    var firstIteration = false;
+    for (var i in Wall.list){
+      var wall = Wall.list[i];
+      distanceCounter = 1;
+      while (self.isCollidingWithRect(wall)){
+        //RESET POS BEFORE OFFSET
+        if (!firstIteration){
+          switch (DIRECTION[DIRECTION.counter]) {
+            case "UP":
+              self.y += distanceCounter;
+              break;
+            case "RIGHT":
+              self.x -= distanceCounter;
+              break;
+            case "LEFT":
+              self.x += distanceCounter;
+              break;
+            case "DOWN":
+              self.y -= distanceCounter;
+          }
+        }
+        //OFFSET TO SET OUT OF WALL
+        switch (DIRECTION.Next()) {
+          case "DOWN":
+            self.y += distanceCounter;
+            break;
+          case "LEFT":
+            self.x -= distanceCounter;
+            break;
+          case "RIGHT":
+            self.x += distanceCounter;
+            break;
+          case "UP":
+            self.y -= distanceCounter;
+            break;
+        }
+        firstIteration = false;
+      }
+    }
+  };
+
+
   self.getInitPack = function(){
       return {
         id:     self.id,
@@ -339,6 +395,13 @@ var Bullet = function(parent, angle){
     self.speedX /= 1.005;
     self.speedY /= 1.005;
     self.damage /= 1.015;
+
+    for (var i in Wall.list) {
+      var wall = Wall.list[i];
+      if(self.isCollidingWithRect(wall)){
+        self.toRemove = true;
+      }
+    }
 
     for (var i in Player.list) {
       var player = Player.list[i];
