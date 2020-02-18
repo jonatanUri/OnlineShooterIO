@@ -66,9 +66,10 @@ var Wall = function (startPoint, width, height) {
 
   self.getInitPack = function () {
     return {
-      x: self.x,
-      y: self.y,
-      width: self.width,
+      id:     self.id,
+      x:      self.x,
+      y:      self.y,
+      width:  self.width,
       height: self.height
     }
   };
@@ -105,11 +106,11 @@ var createNewMap = function () {
     removePack.wall.push(id);
   }
 
-  var topWall = Wall({x: -200, y: -200}, 2000, 10);
-  var rightWall = Wall(topWall.getEndPoint(), 10, 1000);
-  var bottomWall = Wall(rightWall.getEndPoint(), 2000, 10);
+  var topWall = new Wall({x: -200, y: -200}, 2000, 10);
+  var rightWall = new Wall(topWall.getEndPoint(), 10, 1000);
+  var bottomWall = new Wall(rightWall.getEndPoint(), 2000, 10);
   bottomWall.endAtPoint(rightWall.getEndPoint());
-  var leftWall = Wall(topWall.startPoint, 10, 1000);
+  var leftWall = new Wall(topWall.startPoint, 10, 1000);
 };
 
 createNewMap();
@@ -419,7 +420,7 @@ io.sockets.on('connection', function(socket){
 });
 
 setInterval(function(){
-  var packet = {
+  var updatePack = {
     player: Player.update(),
     bullet: Bullet.update(),
   };
@@ -427,7 +428,7 @@ setInterval(function(){
   for (var id in SOCKET_LIST){
     var socket = SOCKET_LIST[id];
     socket.emit('init', initPack);
-    socket.emit('update', packet);
+    socket.emit('update', updatePack);
     socket.emit('remove', removePack);
   }
 

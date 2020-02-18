@@ -57,7 +57,7 @@ var Wall = function (initPack) {
     var y = self.y - Player.list[selfId].y + HEIGHT/2;
     ctx.fillStyle = "#000000";
     ctx.fillRect(x, y, self.width, self.height);
-  }
+  };
 
   Wall.list[self.id] = self;
   return self;
