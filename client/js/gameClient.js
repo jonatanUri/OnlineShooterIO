@@ -31,12 +31,12 @@ var Player = function(initPack){
 
     var hpWidth = 30 * self.hp / self.hpMax;
     ctx.fillStyle = 'red';
-    ctx.fillRect(x - hpWidth/2 + self.width/2, y - 10, hpWidth, 4);
+    ctx.fillRect(x - hpWidth/2, y - 15, hpWidth, 4);
 
-    ctx.fillText(self.name, x - ctx.measureText(self.name).width/2 + self.width/2, y - 15);
+    ctx.fillText(self.name, x - ctx.measureText(self.name).width/2, y - 20);
 
     ctx.fillStyle = '#808080';
-    ctx.fillRect(x, y, self.width, self.height);
+    ctx.fillRect(x - self.width/2, y - self.height/2, self.width, self.height);
   };
 
   Player.list[self.id] = self;
@@ -77,7 +77,7 @@ var Bullet = function(initPack){
     var x = self.x - Player.list[selfId].x + WIDTH/2;
     var y = self.y - Player.list[selfId].y + HEIGHT/2;
     ctx.fillStyle = "#000000";
-    ctx.fillRect(x, y, self.width, self.height);
+    ctx.fillRect(x - self.width/2, y - self.height/2, self.width, self.height);
   };
 
   Bullet.list[self.id] = self;
