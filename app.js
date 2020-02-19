@@ -112,15 +112,15 @@ var House = function () {
   var minDistanceXBorder = 250;
   var self = {
     id:                   Math.random(),
-    widthMin:             500,
-    heightMin:            300,
-    widthVariation:       300,
-    heightVariation:      200,
+    widthMin:             200,
+    heightMin:            150,
+    widthVariation:       500,
+    heightVariation:      400,
     width:                0,
     height:               0,
     x:                    0,
     y:                    0,
-    doorSize:             60,
+    doorSize:             80,
     isCollidingWithRect: function(rect){
       return (self.x < rect.x + rect.width &&
           self.x + self.width > rect.x &&
@@ -141,16 +141,130 @@ var House = function () {
   };
 
   do {
-    self.x = minDistanceXBorder + Math.random() * (2000 - minDistanceXBorder - self.width); //Need refactor (2000 = map width)
-    self.y = Math.random() * (1000 - self.height);                            //Need refactor (1000 = map height)
     self.width = self.widthMin + Math.random() * self.widthVariation;
     self.height = self.heightMin + Math.random() * self.heightVariation;
+    self.x = minDistanceXBorder + Math.random() * (2000 - minDistanceXBorder - self.width); //Need refactor (2000 = map width)
+    self.y = Math.random() * (1000 - self.height);                                          //Need refactor (1000 = map height)
   } while (self.isCollidingWithAnyHouse());
 
-  var leftWall = new VerticalWall({x: self.x, y: self.y}, self.height);
-  var bottomWall = new HorizontalWall( leftWall.getEndPoint(), self.width - self.doorSize);
-  var topWall = new HorizontalWall({x: self.x + self.doorSize, y: self.y}, self.width - self.doorSize);
-  var rightWall = new VerticalWall(topWall.getEndPoint(), self.height);
+  var numberOfDoors = Math.ceil(Math.random() * 2);
+  var doorPos = {
+    leftWall: false,
+    topWall: false,
+    rightWall: false,
+    bottomWall: false,
+  };
+
+  var setDoorPositions = function () {
+    while (numberOfDoors !== 0){
+      switch (Math.floor(Math.random() * 4)) {
+        case 0:
+          if(!doorPos.leftWall){
+            doorPos.leftWall = true;
+            numberOfDoors--;
+          }
+          break;
+        case 1:
+          if(!doorPos.topWall){
+            doorPos.topWall = true;
+            numberOfDoors--;
+          }
+          break;
+        case 2:
+          if(!doorPos.rightWall){
+            doorPos.rightWall = true;
+            numberOfDoors--;
+          }
+          break;
+        case 3:
+          if(!doorPos.bottomWall){
+            doorPos.bottomWall = true;
+            numberOfDoors--;
+          }
+          break;
+      }
+    }
+  };
+
+  setDoorPositions();
+
+  var leftWall = function () {
+    var partWalls = {};
+    var topWallStartPos = {x: self.x, y: self.y};
+    if(doorPos.leftWall){
+      var topWallLength = Math.random() * (self.height - self.doorSize);
+      var bottomWallLength = self.height - self.doorSize - topWallLength;
+      var bottomWallStartPos = {x: self.x, y: self.y + self.doorSize + topWallLength};
+      partWalls = {
+        topWall: new VerticalWall(topWallStartPos, topWallLength),
+        bottomWall: new VerticalWall(bottomWallStartPos, bottomWallLength)
+      }
+    }else {
+      partWalls = {
+        wall: new VerticalWall(topWallStartPos, self.height)
+      }
+    }
+    return partWalls;
+  };
+  var topWall = function () {
+    var partWalls = {};
+    var leftWallStartPos = {x: self.x, y: self.y};
+    if(doorPos.topWall){
+      var leftWallLength = Math.random() * (self.width - self.doorSize);
+      var rightWallLength = self.width - self.doorSize - leftWallLength;
+      var rightWallStartPos = {x: self.x + self.doorSize + leftWallLength, y: self.y};
+      partWalls = {
+        leftWall: new HorizontalWall(leftWallStartPos, leftWallLength),
+        rightWall: new HorizontalWall(rightWallStartPos, rightWallLength)
+      }
+    }else {
+      partWalls = {
+        wall: new HorizontalWall(leftWallStartPos, self.width)
+      }
+    }
+    return partWalls;
+  };
+  var rightWall = function () {
+    var partWalls = {};
+    var topWallStartPos = {x: self.x + self.width, y: self.y};
+    if(doorPos.rightWall){
+      var topWallLength = Math.random() * (self.height - self.doorSize);
+      var bottomWallLength = self.height - self.doorSize - topWallLength;
+      var bottomWallStartPos = {x: self.x + self.width, y: self.y + self.doorSize + topWallLength};
+      partWalls = {
+        topWall: new VerticalWall(topWallStartPos, topWallLength),
+        bottomWall: new VerticalWall(bottomWallStartPos, bottomWallLength)
+      }
+    }else {
+      partWalls = {
+        wall: new VerticalWall(topWallStartPos, self.height)
+      }
+    }
+    return partWalls;
+  };
+  var bottomWall = function () {
+    var partWalls = {};
+    var leftWallStartPos = {x: self.x, y: self.y + self.height};
+    if(doorPos.bottomWall){
+      var leftWallLength = Math.random() * (self.width - self.doorSize);
+      var rightWallLength = self.width - self.doorSize - leftWallLength;
+      var rightWallStartPos = {x: self.x + self.doorSize + leftWallLength, y: self.y + self.height};
+      partWalls = {
+        leftWall: new HorizontalWall(leftWallStartPos, leftWallLength),
+        rightWall: new HorizontalWall(rightWallStartPos, rightWallLength)
+      }
+    }else {
+      partWalls = {
+        wall: new HorizontalWall(leftWallStartPos, self.width)
+      }
+    }
+    return partWalls;
+  };
+
+  rightWall();
+  topWall();
+  leftWall();
+  bottomWall();
 
   House.list[self.id] = self;
   return self;
@@ -169,6 +283,8 @@ var createNewMap = function () {
   bottomWall.endAtPoint(rightWall.getEndPoint());
   var leftWall = new Wall(topWall.startPoint, 10, 1000);
 
+  House();
+  House();
   House();
   House();
   House();
