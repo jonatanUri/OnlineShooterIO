@@ -100,17 +100,78 @@ Wall.getAllInitpack = function(){
   return walls;
 };
 
+var HorizontalWall = function (startPoint, length) {
+  return new Wall(startPoint, length, 8);
+};
+
+var VerticalWall = function (startPoint, length) {
+  return new Wall(startPoint, 8, length);
+};
+
+var House = function () {
+  var minDistanceXBorder = 250;
+  var self = {
+    id:                   Math.random(),
+    widthMin:             500,
+    heightMin:            300,
+    widthVariation:       300,
+    heightVariation:      200,
+    width:                0,
+    height:               0,
+    x:                    0,
+    y:                    0,
+    doorSize:             60,
+    isCollidingWithRect: function(rect){
+      return (self.x < rect.x + rect.width &&
+          self.x + self.width > rect.x &&
+          self.y < rect.y + rect.height &&
+          self.y + self.height > rect.y)
+    }
+  };
+
+  self.isCollidingWithAnyHouse = function () {
+    for(var i in House.list){
+      if (House.list[i].id !== self.id){
+        if(self.isCollidingWithRect(House.list[i])){
+          return true;
+        }
+      }
+    }
+    return false;
+  };
+
+  do {
+    self.x = minDistanceXBorder + Math.random() * (2000 - minDistanceXBorder - self.width); //Need refactor (2000 = map width)
+    self.y = Math.random() * (1000 - self.height);                            //Need refactor (1000 = map height)
+    self.width = self.widthMin + Math.random() * self.widthVariation;
+    self.height = self.heightMin + Math.random() * self.heightVariation;
+  } while (self.isCollidingWithAnyHouse());
+
+  var leftWall = new VerticalWall({x: self.x, y: self.y}, self.height);
+  var bottomWall = new HorizontalWall( leftWall.getEndPoint(), self.width - self.doorSize);
+  var topWall = new HorizontalWall({x: self.x + self.doorSize, y: self.y}, self.width - self.doorSize);
+  var rightWall = new VerticalWall(topWall.getEndPoint(), self.height);
+
+  House.list[self.id] = self;
+  return self;
+};
+House.list = {};
+
 var createNewMap = function () {
   for (var id in Wall.list){
     delete Wall.list[id];
     removePack.wall.push(id);
   }
 
-  var topWall = new Wall({x: -200, y: -200}, 2000, 10);
+  var topWall = new Wall({x: 0, y: 0}, 2000, 10);
   var rightWall = new Wall(topWall.getEndPoint(), 10, 1000);
   var bottomWall = new Wall(rightWall.getEndPoint(), 2000, 10);
   bottomWall.endAtPoint(rightWall.getEndPoint());
   var leftWall = new Wall(topWall.startPoint, 10, 1000);
+
+  House();
+  House();
+  House();
 };
 
 createNewMap();
