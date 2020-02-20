@@ -28,26 +28,28 @@ var Player = function(initPack){
   self.score =      initPack.score;
   self.killCount =  initPack.killCount;
   self.deathCount = initPack.deathCount;
+  self.pressingTab = false;
 
   self.draw = function(){
     var x = self.x - Player.list[selfId].x + WIDTH/2;
     var y = self.y - Player.list[selfId].y + HEIGHT/2;
 
 
+
+    var barWidth = 30;
+
+    var hpWidth = barWidth * self.hp / self.hpMax;
+    ctx.fillStyle = '#222222A0';
+    ctx.fillRect(x - barWidth/2 + self.width/2, y - 10, barWidth, 4);
+
     if (self.id !== selfId){
-      var barWidth = 30;
-
-      var hpWidth = barWidth * self.hp / self.hpMax;
-      ctx.fillStyle = '#222222A0';
-      ctx.fillRect(x - barWidth/2 + self.width/2, y - 10, barWidth, 4);
-
-      ctx.fillStyle = 'red';
-      ctx.fillRect(x - barWidth/2 + self.width/2, y - 10, hpWidth, 4);
-
-      ctx.fillStyle = 'black';
-      ctx.fillText(self.name, x - ctx.measureText(self.name).width/2 + self.width/2, y - 15);
-
+      ctx.fillStyle = '#FF3622C0';
+    } else {
+      ctx.fillStyle = '#23C216C0'
     }
+    ctx.fillRect(x - barWidth/2 + self.width/2, y - 10, hpWidth, 4);
+    ctx.fillStyle = '#000000';
+    ctx.fillText(self.name, x - ctx.measureText(self.name).width/2 + self.width/2, y - 15);
 
     ctx.fillStyle = '#808080';
     ctx.fillRect(x, y, self.width, self.height);
@@ -265,8 +267,11 @@ document.onkeydown = function(event){
   else if(event.keyCode === 87){ //W
     socket.emit('keyPress', {inputId: 'up', state:true});
   }
-  else  if(event.keyCode === 16){
+  else if(event.keyCode === 16){ //Shift
     socket.emit('keyPress', {inputId: 'shift', state: true});
+  }
+  else if(event.keyCode === 9){ //Tab
+    Player.list[selfId].pressingTab = true;
   }
 };
 document.onkeyup = function(event){
@@ -284,6 +289,9 @@ document.onkeyup = function(event){
   }
   else  if(event.keyCode === 16){
     socket.emit('keyPress', {inputId: 'shift', state: false});
+  }
+  else if(event.keyCode === 9){ //Tab
+    Player.list[selfId].pressingTab = false;
   }
 };
 document.onmousedown = function(event){
