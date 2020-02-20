@@ -418,6 +418,15 @@ var Player = function(id){
     bullet.y = self.y + self.height/2;
   };
 
+  self.isCollidingWithAnyWalls = function() {
+    for(var i in Wall.list){
+      if(self.isCollidingWithRect(Wall.list[i])){
+        return true;
+      }
+    }
+    return false;
+  };
+
   self.updateSpeed = function(){
     if(self.pressingShift && self.stamina > 0){
       self.stamina--;
@@ -663,7 +672,7 @@ var Bullet = function(parent, angle){
   self.maxSpeed = 8;
   self.width =    5;
   self.height =   5;
-  self.damage =   10;
+  self.damage =   40;
   self.speedX =   Math.cos(angle/180*Math.PI) * self.maxSpeed;
   self.speedY =   Math.sin(angle/180*Math.PI) * self.maxSpeed;
 
@@ -699,8 +708,11 @@ var Bullet = function(parent, angle){
             shooter.score++;
           }
           player.hp = player.hpMax;
-          player.x = Math.random() * 500; //NEED REFACTOR (width, height)
-          player.y = Math.random() * 500; //-
+          player.stamina = player.maxStamina;
+          do{
+            player.x = Math.random() * MAPWIDTH;
+            player.y = Math.random() * MAPHEIGHT;
+          }while (player.isCollidingWithAnyWalls());
         }
         self.toRemove = true;
       }

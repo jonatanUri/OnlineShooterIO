@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="dacd90a8-e137-4bd0-912d-17facddd7beb" name="Default Changelist" comment="" />
+    <list default="true" id="dacd90a8-e137-4bd0-912d-17facddd7beb" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app.js" beforeDir="false" afterPath="$PROJECT_DIR$/app.js" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -67,22 +70,22 @@
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
     <state x="947" y="356" key="FileChooserDialogImpl/0.0.1920.1040@0.0.1920.1040" timestamp="1581933094538" />
-    <state width="1899" height="261" key="GridCell.Tab.0.bottom" timestamp="1581937475165">
+    <state width="1899" height="142" key="GridCell.Tab.0.bottom" timestamp="1582204269171">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
-    <state width="1899" height="261" key="GridCell.Tab.0.bottom/0.0.1920.1040@0.0.1920.1040" timestamp="1581937475165" />
-    <state width="1899" height="261" key="GridCell.Tab.0.center" timestamp="1581937475164">
+    <state width="1899" height="142" key="GridCell.Tab.0.bottom/0.0.1920.1040@0.0.1920.1040" timestamp="1582204269171" />
+    <state width="1899" height="142" key="GridCell.Tab.0.center" timestamp="1582204269170">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
-    <state width="1899" height="261" key="GridCell.Tab.0.center/0.0.1920.1040@0.0.1920.1040" timestamp="1581937475164" />
-    <state width="1899" height="261" key="GridCell.Tab.0.left" timestamp="1581937475164">
+    <state width="1899" height="142" key="GridCell.Tab.0.center/0.0.1920.1040@0.0.1920.1040" timestamp="1582204269170" />
+    <state width="1899" height="142" key="GridCell.Tab.0.left" timestamp="1582204269170">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
-    <state width="1899" height="261" key="GridCell.Tab.0.left/0.0.1920.1040@0.0.1920.1040" timestamp="1581937475164" />
-    <state width="1899" height="261" key="GridCell.Tab.0.right" timestamp="1581937475165">
+    <state width="1899" height="142" key="GridCell.Tab.0.left/0.0.1920.1040@0.0.1920.1040" timestamp="1582204269170" />
+    <state width="1899" height="142" key="GridCell.Tab.0.right" timestamp="1582204269170">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
-    <state width="1899" height="261" key="GridCell.Tab.0.right/0.0.1920.1040@0.0.1920.1040" timestamp="1581937475165" />
+    <state width="1899" height="142" key="GridCell.Tab.0.right/0.0.1920.1040@0.0.1920.1040" timestamp="1582204269170" />
     <state width="1899" height="395" key="GridCell.Tab.1.bottom" timestamp="1581936358061">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
@@ -141,16 +144,6 @@
     <state x="520" y="173" key="com.intellij.xdebugger.impl.breakpoints.ui.BreakpointsDialogFactory$2/0.0.1920.1040@0.0.1920.1040" timestamp="1581935907948" />
   </component>
   <component name="XDebuggerManager">
-    <breakpoint-manager>
-      <breakpoints>
-        <line-breakpoint enabled="true" type="javascript">
-          <url>file://$PROJECT_DIR$/app.js</url>
-          <line>279</line>
-          <properties lambdaOrdinal="-1" />
-          <option name="timeStamp" value="9" />
-        </line-breakpoint>
-      </breakpoints>
-    </breakpoint-manager>
     <watches-manager>
       <configuration name="NodeJSConfigurationType">
         <watch expression="self.getDistance(player)" language="JavaScript" />
