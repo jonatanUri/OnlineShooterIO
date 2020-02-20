@@ -83,6 +83,13 @@ var Wall = function (startPoint, width, height) {
     }
   };
 
+  self.getCenterPoint = function(){
+    return{
+      x: self.x + self.width/2,
+      y: self.y + self.height/2,
+    }
+  };
+
   self.endAtPoint = function(point) {
     self.x = point.x - width;
     self.y = point.y - height;
@@ -192,7 +199,7 @@ var House = function () {
 
   setDoorPositions();
 
-  var leftWall = function () {
+  var makeLeftWall = function () {
     var partWalls = {};
     var topWallStartPos = {x: self.x, y: self.y};
     if(doorPos.leftWall){
@@ -210,7 +217,7 @@ var House = function () {
     }
     return partWalls;
   };
-  var topWall = function () {
+  var makeTopWall = function () {
     var partWalls = {};
     var leftWallStartPos = {x: self.x, y: self.y};
     if(doorPos.topWall){
@@ -228,7 +235,7 @@ var House = function () {
     }
     return partWalls;
   };
-  var rightWall = function () {
+  var makeRightWall = function () {
     var partWalls = {};
     var topWallStartPos = {x: self.x + self.width, y: self.y};
     if(doorPos.rightWall){
@@ -246,7 +253,7 @@ var House = function () {
     }
     return partWalls;
   };
-  var bottomWall = function () {
+  var makeBottomWall = function () {
     var partWalls = {};
     var leftWallStartPos = {x: self.x, y: self.y + self.height};
     if(doorPos.bottomWall){
@@ -265,10 +272,73 @@ var House = function () {
     return partWalls;
   };
 
-  rightWall();
-  topWall();
-  leftWall();
-  bottomWall();
+  var rightWall = makeRightWall();
+  var topWall = makeTopWall();
+  var leftWall = makeLeftWall();
+  var bottomWall = makeBottomWall();
+
+  var interiorWalls = [];
+  var makeInteriorWalls = function() {
+    var wallToExtend;
+    switch (Math.floor(Math.random() * 4)) {
+      case 0:
+        if(rightWall.wall){
+          wallToExtend = rightWall.wall;
+        } else {
+          if (rightWall.topWall.height > rightWall.bottomWall.height){
+            wallToExtend = rightWall.topWall;
+          } else {
+            wallToExtend = rightWall.bottomWall;
+          }
+        }
+        var wall = new HorizontalWall({x:0, y: 0}, 20 + Math.random() * (self.width * 0.7 - 20));
+        wall.endAtPoint(wallToExtend.getCenterPoint());
+        interiorWalls.push(wall);
+        break;
+      case 1:
+        if(topWall.wall){
+          wallToExtend = topWall.wall;
+        } else {
+          if (topWall.leftWall.width > topWall.rightWall.width){
+            wallToExtend = topWall.leftWall;
+          } else {
+            wallToExtend = topWall.rightWall;
+          }
+        }
+        var wall = new VerticalWall(wallToExtend.getCenterPoint(), 20 + Math.random() * (self.height * 0.7 - 20));
+        interiorWalls.push(wall);
+        break;
+      case 2:
+        if(leftWall.wall){
+          wallToExtend = leftWall.wall;
+        } else {
+          if(leftWall.topWall.height > leftWall.bottomWall.height){
+            wallToExtend = leftWall.topWall;
+          } else {
+            wallToExtend = leftWall.bottomWall;
+          }
+        }
+        var wall = new HorizontalWall(wallToExtend.getCenterPoint(), 20 + Math.random() * (self.width * 0.7 - 20));
+        interiorWalls.push(wall);
+        break;
+      case 3:
+        if(bottomWall.wall){
+          wallToExtend = bottomWall.wall;
+        } else {
+          if(bottomWall.leftWall.width > bottomWall.rightWall.width){
+            wallToExtend = bottomWall.leftWall;
+          } else {
+            wallToExtend = bottomWall.rightWall;
+          }
+        }
+        var wall = new VerticalWall({x: 0, y: 0}, 50 + Math.random() * (self.height * 0.7 - 50));
+        wall.endAtPoint(wallToExtend.getCenterPoint());
+        interiorWalls.push(wall);
+        break;
+    }
+  };
+
+  makeInteriorWalls();
 
   House.list[self.id] = self;
   return self;
