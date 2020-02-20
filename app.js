@@ -112,6 +112,7 @@ var VerticalWall = function (startPoint, length) {
 
 var House = function () {
   var minDistanceXBorder = 250;
+  var minDistanceYBorder = 30;
   var self = {
     id:                   Math.random(),
     widthMin:             200,
@@ -123,18 +124,19 @@ var House = function () {
     x:                    0,
     y:                    0,
     doorSize:             80,
-    isCollidingWithRect: function(rect){
-      return (self.x < rect.x + rect.width &&
-          self.x + self.width > rect.x &&
-          self.y < rect.y + rect.height &&
-          self.y + self.height > rect.y)
+    minDistance:          25,
+    isTooCloseToRect: function(rect){
+      return (self.x - self.minDistance < rect.x + rect.width &&
+          self.x + self.width + self.minDistance > rect.x &&
+          self.y - self.minDistance < rect.y + rect.height &&
+          self.y + self.height + self.minDistance > rect.y)
     }
   };
 
-  self.isCollidingWithAnyHouse = function () {
+  self.isTooCloseToAnyHouse = function () {
     for(var i in House.list){
       if (House.list[i].id !== self.id){
-        if(self.isCollidingWithRect(House.list[i])){
+        if(self.isTooCloseToRect(House.list[i])){
           return true;
         }
       }
@@ -145,9 +147,9 @@ var House = function () {
   do {
     self.width = self.widthMin + Math.random() * self.widthVariation;
     self.height = self.heightMin + Math.random() * self.heightVariation;
-    self.x = minDistanceXBorder + Math.random() * (MAPWIDTH - minDistanceXBorder - self.width);
-    self.y = Math.random() * (MAPHEIGHT - self.height);
-  } while (self.isCollidingWithAnyHouse());
+    self.x = minDistanceXBorder + Math.random() * (MAPWIDTH - minDistanceXBorder - self.width - self.minDistance);
+    self.y = self.minDistance + Math.random() * (MAPHEIGHT - minDistanceYBorder - self.height - self.minDistance);
+  } while (self.isTooCloseToAnyHouse());
 
   var numberOfDoors = Math.ceil(Math.random() * 2);
   var doorPos = {
