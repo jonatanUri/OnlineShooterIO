@@ -15,24 +15,33 @@ nameBox.addEventListener("onkeypress", emitNewName);
 
 var Player = function(initPack){
   var self = {};
-  self.id = initPack.id;
-  self.name = initPack.name;
-  self.x = initPack.x;
-  self.y = initPack.y;
-  self.width = initPack.width;
-  self.height = initPack.height;
-  self.hp = initPack.hp;
-  self.hpMax = initPack.hpMax;
-  self.score = initPack.score;
+  self.id =         initPack.id;
+  self.name =       initPack.name;
+  self.x =          initPack.x;
+  self.y =          initPack.y;
+  self.width =      initPack.width;
+  self.height =     initPack.height;
+  self.hp =         initPack.hp;
+  self.hpMax =      initPack.hpMax;
+  self.stamina =    initPack.stamina;
+  self.maxStamina = initPack.maxStamina;
+  self.score =      initPack.score;
 
   self.draw = function(){
     var x = self.x - Player.list[selfId].x + WIDTH/2;
     var y = self.y - Player.list[selfId].y + HEIGHT/2;
 
-    var hpWidth = 30 * self.hp / self.hpMax;
+    var barWidth = 30;
+
+    var hpWidth = barWidth * self.hp / self.hpMax;
     ctx.fillStyle = 'red';
     ctx.fillRect(x - hpWidth/2 + self.width/2, y - 10, hpWidth, 4);
 
+    var staminaWidth = barWidth * self.stamina / self.maxStamina;
+    ctx.fillStyle = 'yellow';
+    ctx.fillRect(x - staminaWidth/2 + self.width/2, y - 6, staminaWidth, 4);
+
+    ctx.fillStyle = 'black';
     ctx.fillText(self.name, x - ctx.measureText(self.name).width/2 + self.width/2, y - 15);
 
     ctx.fillStyle = '#808080';
@@ -133,6 +142,12 @@ socket.on("update", function(data){
       if(packet.hpMax !== undefined){
         player.hpMax = packet.hpMax;
       }
+      if(packet.stamina !== undefined){
+        player.stamina = packet.stamina;
+      }
+      if(packet.maxStamina !== undefined){
+        player.maxStamina = packet.maxStamina;
+      }
       if(packet.score !== undefined){
         player.score = packet.score;
       }
@@ -213,6 +228,9 @@ document.onkeydown = function(event){
   else if(event.keyCode === 87){ //W
     socket.emit('keyPress', {inputId: 'up', state:true});
   }
+  else  if(event.keyCode === 16){
+    socket.emit('keyPress', {inputId: 'shift', state: true});
+  }
 };
 document.onkeyup = function(event){
   if(event.keyCode === 68){ //D
@@ -226,6 +244,9 @@ document.onkeyup = function(event){
   }
   else if(event.keyCode === 87){ //W
     socket.emit('keyPress', {inputId: 'up', state:false});
+  }
+  else  if(event.keyCode === 16){
+    socket.emit('keyPress', {inputId: 'shift', state: false});
   }
 };
 document.onmousedown = function(event){
