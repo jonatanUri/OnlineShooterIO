@@ -244,11 +244,11 @@ var House = function () {
       var bottomWallStartPos = {x: self.x + self.width, y: self.y + self.doorSize + topWallLength};
       partWalls = {
         topWall: new VerticalWall(topWallStartPos, topWallLength),
-        bottomWall: new VerticalWall(bottomWallStartPos, bottomWallLength)
+        bottomWall: new VerticalWall(bottomWallStartPos, bottomWallLength + 8) // <---- (+8 for correct cornering, need refactor)
       }
     }else {
       partWalls = {
-        wall: new VerticalWall(topWallStartPos, self.height)
+        wall: new VerticalWall(topWallStartPos, self.height + 8) // <---- (+8 for correct cornering, need refactor)
       }
     }
     return partWalls;
