@@ -573,37 +573,37 @@ var Player = function(id){
 
 
   self.getInitPack = function(){
-      return {
-        id:         self.id,
-        name:       self.name,
-        x:          self.x,
-        y:          self.y,
-        width:      self.width,
-        height:     self.height,
-        hp:         self.hp,
-        hpMax:      self.hpMax,
-        stamina:    self.stamina,
-        maxStamina: self.maxStamina,
-        score:      self.score,
-        killCount:  self.killCount,
-        deathCount: self.deathCount
-      }
+    return {
+      id:         self.id,
+      name:       self.name,
+      x:          self.x,
+      y:          self.y,
+      width:      self.width,
+      height:     self.height,
+      hp:         self.hp,
+      hpMax:      self.hpMax,
+      stamina:    self.stamina,
+      maxStamina: self.maxStamina,
+      score:      self.score,
+      killCount:  self.killCount,
+      deathCount: self.deathCount
+    }
   };
   self.getUpdatePack = function(){
-      return {
-        id:         self.id,
-        name:       self.name,
-        x:          self.x,
-        y:          self.y,
-        width:      self.width,
-        height:     self.height,
-        hp:         self.hp,
-        hpMax:      self.hpMax,
-        stamina:    self.stamina,
-        score:      self.score,
-        killCount:  self.killCount,
-        deathCount: self.deathCount
-      }
+    return {
+      id:         self.id,
+      name:       self.name,
+      x:          self.x,
+      y:          self.y,
+      width:      self.width,
+      height:     self.height,
+      hp:         self.hp,
+      hpMax:      self.hpMax,
+      stamina:    self.stamina,
+      score:      self.score,
+      killCount:  self.killCount,
+      deathCount: self.deathCount
+    }
   };
 
   Player.list[id] = self;
