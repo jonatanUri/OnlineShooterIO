@@ -376,6 +376,8 @@ var Player = function(id){
   self.hp =             100;
   self.hpMax =          100;
   self.score =          0;
+  self.killCount =      0;
+  self.deathCount =     0;
   self.pressingRight =  false;
   self.pressingLeft =   false;
   self.pressingUp =     false;
@@ -582,7 +584,9 @@ var Player = function(id){
         hpMax:      self.hpMax,
         stamina:    self.stamina,
         maxStamina: self.maxStamina,
-        score:      self.score
+        score:      self.score,
+        killCount:  self.killCount,
+        deathCount: self.deathCount
       }
   };
   self.getUpdatePack = function(){
@@ -596,8 +600,9 @@ var Player = function(id){
         hp:         self.hp,
         hpMax:      self.hpMax,
         stamina:    self.stamina,
-        maxStamina: self.maxStamina,
-        score:      self.score
+        score:      self.score,
+        killCount:  self.killCount,
+        deathCount: self.deathCount
       }
   };
 
@@ -706,7 +711,9 @@ var Bullet = function(parent, angle){
           var shooter = Player.list[self.parent];
           if (shooter){
             shooter.score++;
+            shooter.killCount++;
           }
+          player.deathCount++;
           player.hp = player.hpMax;
           player.stamina = player.maxStamina;
           do{
