@@ -26,23 +26,28 @@ var Player = function(initPack){
   self.stamina =    initPack.stamina;
   self.maxStamina = initPack.maxStamina;
   self.score =      initPack.score;
+  self.killCount =  initPack.killCount;
+  self.deathCount = initPack.deathCount;
 
   self.draw = function(){
     var x = self.x - Player.list[selfId].x + WIDTH/2;
     var y = self.y - Player.list[selfId].y + HEIGHT/2;
 
-    var barWidth = 30;
 
-    var hpWidth = barWidth * self.hp / self.hpMax;
-    ctx.fillStyle = 'red';
-    ctx.fillRect(x - hpWidth/2 + self.width/2, y - 10, hpWidth, 4);
+    if (self.id !== selfId){
+      var barWidth = 30;
 
-    var staminaWidth = barWidth * self.stamina / self.maxStamina;
-    ctx.fillStyle = 'yellow';
-    ctx.fillRect(x - staminaWidth/2 + self.width/2, y - 6, staminaWidth, 4);
+      var hpWidth = barWidth * self.hp / self.hpMax;
+      ctx.fillStyle = '#222222A0';
+      ctx.fillRect(x - barWidth/2 + self.width/2, y - 10, barWidth, 4);
 
-    ctx.fillStyle = 'black';
-    ctx.fillText(self.name, x - ctx.measureText(self.name).width/2 + self.width/2, y - 15);
+      ctx.fillStyle = 'red';
+      ctx.fillRect(x - barWidth/2 + self.width/2, y - 10, hpWidth, 4);
+
+      ctx.fillStyle = 'black';
+      ctx.fillText(self.name, x - ctx.measureText(self.name).width/2 + self.width/2, y - 15);
+
+    }
 
     ctx.fillStyle = '#808080';
     ctx.fillRect(x, y, self.width, self.height);
@@ -151,6 +156,12 @@ socket.on("update", function(data){
       if(packet.score !== undefined){
         player.score = packet.score;
       }
+      if(packet.killCount !== undefined){
+        player.killCount = packet.killCount;
+      }
+      if(packet.deathCount !== undefined){
+        player.deathCount = packet.deathCount;
+      }
     }
   }
   for (var i = 0; i < data.bullet.length; i++) {
@@ -190,26 +201,52 @@ setInterval(function(){
     return;
   ctx.clearRect(0, 0, WIDTH, HEIGHT);
   drawScore();
-  drawPositon();
+  drawPosition();
 
+  for(var i in Wall.list){
+    Wall.list[i].draw();
+  }
   for(var i in Player.list){
     Player.list[i].draw();
   }
   for(var i in Bullet.list){
     Bullet.list[i].draw();
   }
-  for(var i in Wall.list){
-    Wall.list[i].draw();
-  }
+
+  drawHp();
+  drawStamina();
+
 }, 1000/45);
 
 var drawScore = function(){
-    ctx.fillStyle = '#404040';
-    ctx.fillText('Score: ' + Player.list[selfId].score, 3, 10)
+  ctx.fillStyle = '#404040';
+  ctx.fillText('Score: ' + Player.list[selfId].score, 3, 10);
+  ctx.fillText('Kills: ' + Player.list[selfId].killCount, 3, 20);
+  ctx.fillText('Deaths: ' + Player.list[selfId].deathCount, 3, 30);
 };
 
-var drawPositon = function(){
-  ctx.fillStyle = "#404040"
+var hpBarWidth = 150;
+var hpBarHeight = 15;
+var drawHp = function () {
+  ctx.fillStyle = '#CFFFCCA0';
+  ctx.fillRect(WIDTH/2 - hpBarWidth/2, HEIGHT-25, hpBarWidth, hpBarHeight);
+  var hpWidth = hpBarWidth * (Player.list[selfId].hp / Player.list[selfId].hpMax);
+  ctx.fillStyle = '#23C216C0';
+  ctx.fillRect(WIDTH/2 - hpBarWidth/2, HEIGHT-25, hpWidth, hpBarHeight);
+};
+
+var staminaBarWidth = 150;
+var staminaBarHeight = 10;
+var drawStamina = function () {
+  ctx.fillStyle = '#FDFFC5A0';
+  ctx.fillRect(WIDTH/2 - staminaBarWidth/2, HEIGHT-10, staminaBarWidth, staminaBarHeight);
+  var staminaWidth = staminaBarWidth * (Player.list[selfId].stamina / Player.list[selfId].maxStamina);
+  ctx.fillStyle = '#FFE300C0';
+  ctx.fillRect(WIDTH/2 - staminaBarWidth/2, HEIGHT-10, staminaWidth, staminaBarHeight);
+};
+
+var drawPosition = function(){
+  ctx.fillStyle = "#404040";
   ctx.fillText('x: ' + Player.list[selfId].x +
               ' y: ' + Player.list[selfId].y,
                3, HEIGHT - 5);
