@@ -21,6 +21,8 @@ var SOCKET_LIST = {};
 
 var initPack = {player:[], bullet:[], wall:[]};
 var removePack = {player:[], bullet:[], wall:[]};
+var MAPWIDTH = 2000;
+var MAPHEIGHT = 1000;
 
 var Entity = function(){
   var self = {
@@ -143,8 +145,8 @@ var House = function () {
   do {
     self.width = self.widthMin + Math.random() * self.widthVariation;
     self.height = self.heightMin + Math.random() * self.heightVariation;
-    self.x = minDistanceXBorder + Math.random() * (2000 - minDistanceXBorder - self.width); //Need refactor (2000 = map width)
-    self.y = Math.random() * (1000 - self.height);                                          //Need refactor (1000 = map height)
+    self.x = minDistanceXBorder + Math.random() * (MAPWIDTH - minDistanceXBorder - self.width);
+    self.y = Math.random() * (MAPHEIGHT - self.height);
   } while (self.isCollidingWithAnyHouse());
 
   var numberOfDoors = Math.ceil(Math.random() * 2);
@@ -277,11 +279,11 @@ var createNewMap = function () {
     removePack.wall.push(id);
   }
 
-  var topWall = new Wall({x: 0, y: 0}, 2000, 10);
-  var rightWall = new Wall(topWall.getEndPoint(), 10, 1000);
-  var bottomWall = new Wall(rightWall.getEndPoint(), 2000, 10);
+  var topWall = new Wall({x: 0, y: 0}, MAPWIDTH, 10);
+  var rightWall = new Wall(topWall.getEndPoint(), 10, MAPHEIGHT);
+  var bottomWall = new Wall(rightWall.getEndPoint(), MAPWIDTH, 10);
   bottomWall.endAtPoint(rightWall.getEndPoint());
-  var leftWall = new Wall(topWall.startPoint, 10, 1000);
+  var leftWall = new Wall(topWall.startPoint, 10, MAPHEIGHT);
 
   House();
   House();
@@ -306,11 +308,16 @@ var Player = function(id){
   self.pressingLeft =   false;
   self.pressingUp =     false;
   self.pressingDown =   false;
+  self.pressingShift =  false;
   self.pressingAttack = false;
   self.mouseAngle =     0;
   self.speedX =         0;
   self.speedY =         0;
   self.maxSpeed =       3;
+  self.defaultMaxSpeed = 3;
+  self.sprintMaxSpeed = 6;
+  self.maxStamina =     100;
+  self.stamina =        100;
   self.acceleration =   0.2;
   self.attackTimer =    0;
   self.attackRate =     1000 / 100;
@@ -340,6 +347,30 @@ var Player = function(id){
   };
 
   self.updateSpeed = function(){
+    if(self.pressingShift && self.stamina > 0){
+      self.stamina--;
+      self.maxSpeed = self.sprintMaxSpeed;
+    } else {
+      self.maxSpeed = self.defaultMaxSpeed;
+
+      if (self.speedX > self.maxSpeed){
+        self.speedX -= self.acceleration;
+      }else if(self.speedX  < -self.maxSpeed){
+        self.speedX += self.acceleration;
+      }
+      if (self.speedY > self.maxSpeed){
+        self.speedY -= self.acceleration;
+      } else if (self.speedY < -self.maxSpeed){
+        self.speedY += self.acceleration;
+      }
+    }
+
+    if(!self.pressingDown && !self.pressingRight &&
+       !self.pressingLeft && !self.pressingUp &&
+       self.stamina < self.maxStamina){
+      self.stamina++;
+    }
+
     if(self.pressingRight){
       if(self.speedX < self.maxSpeed){
         self.speedX += self.acceleration;
@@ -460,28 +491,32 @@ var Player = function(id){
 
   self.getInitPack = function(){
       return {
-        id:     self.id,
-        name:   self.name,
-        x:      self.x,
-        y:      self.y,
-        width:  self.width,
-        height: self.height,
-        hp:     self.hp,
-        hpMax:  self.hpMax,
-        score:  self.score
+        id:         self.id,
+        name:       self.name,
+        x:          self.x,
+        y:          self.y,
+        width:      self.width,
+        height:     self.height,
+        hp:         self.hp,
+        hpMax:      self.hpMax,
+        stamina:    self.stamina,
+        maxStamina: self.maxStamina,
+        score:      self.score
       }
   };
   self.getUpdatePack = function(){
       return {
-        id:     self.id,
-        name:   self.name,
-        x:      self.x,
-        y:      self.y,
-        width:  self.width,
-        height: self.height,
-        hp:     self.hp,
-        hpMax:  self.hpMax,
-        score:  self.score
+        id:         self.id,
+        name:       self.name,
+        x:          self.x,
+        y:          self.y,
+        width:      self.width,
+        height:     self.height,
+        hp:         self.hp,
+        hpMax:      self.hpMax,
+        stamina:    self.stamina,
+        maxStamina: self.maxStamina,
+        score:      self.score
       }
   };
 
@@ -504,6 +539,8 @@ Player.onConnect = function(socket) {
       player.pressingUp = data.state;
     }else if(data.inputId === 'down'){
       player.pressingDown = data.state;
+    }else if(data.inputId === 'shift'){
+      player.pressingShift = data.state;
     }else if(data.inputId === 'attack'){
       player.pressingAttack = data.state;
     }else if(data.inputId === 'mouseAngle'){
