@@ -518,6 +518,15 @@ var Player = function(id){
     }
   };
 
+  self.reSpawn = function () {
+    self.hp = self.hpMax;
+    self.stamina = self.maxStamina;
+    do{
+      self.x = Math.random() * MAPWIDTH;
+      self.y = Math.random() * MAPHEIGHT;
+    }while (self.isCollidingWithAnyWalls());
+  };
+
   var distanceCounter = 1;
   var DIRECTION = ["UP", "RIGHT", "DOWN", "LEFT"];
   DIRECTION.counter = 0;
@@ -615,6 +624,7 @@ Player.list = {};
 
 Player.onConnect = function(socket) {
   var player = Player(socket.id);
+  player.reSpawn();
 
   socket.on('keyPress', function(data){
     if(data.inputId === 'left'){
@@ -714,12 +724,7 @@ var Bullet = function(parent, angle){
             shooter.killCount++;
           }
           player.deathCount++;
-          player.hp = player.hpMax;
-          player.stamina = player.maxStamina;
-          do{
-            player.x = Math.random() * MAPWIDTH;
-            player.y = Math.random() * MAPHEIGHT;
-          }while (player.isCollidingWithAnyWalls());
+          player.reSpawn();
         }
         self.toRemove = true;
       }
