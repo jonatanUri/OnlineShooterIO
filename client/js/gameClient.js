@@ -271,6 +271,7 @@ document.onkeydown = function(event){
     socket.emit('keyPress', {inputId: 'shift', state: true});
   }
   else if(event.keyCode === 9){ //Tab
+    event.preventDefault();
     Player.list[selfId].pressingTab = true;
   }
 };
@@ -291,6 +292,7 @@ document.onkeyup = function(event){
     socket.emit('keyPress', {inputId: 'shift', state: false});
   }
   else if(event.keyCode === 9){ //Tab
+    event.preventDefault();
     Player.list[selfId].pressingTab = false;
   }
 };
