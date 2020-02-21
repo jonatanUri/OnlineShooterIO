@@ -119,7 +119,7 @@ var VerticalWall = function (startPoint, length) {
 
 var House = function () {
   var minDistanceXBorder = 250;
-  var minDistanceYBorder = 30;
+  var minDistanceYBorder = 40;
   var self = {
     id:                   Math.random(),
     widthMin:             200,
@@ -131,7 +131,7 @@ var House = function () {
     x:                    0,
     y:                    0,
     doorSize:             80,
-    minDistance:          25,
+    minDistance:          35,
     isTooCloseToRect: function(rect){
       return (self.x - self.minDistance < rect.x + rect.width &&
           self.x + self.width + self.minDistance > rect.x &&
@@ -154,11 +154,11 @@ var House = function () {
   do {
     self.width = self.widthMin + Math.random() * self.widthVariation;
     self.height = self.heightMin + Math.random() * self.heightVariation;
-    self.x = minDistanceXBorder + Math.random() * (MAPWIDTH - minDistanceXBorder - self.width - self.minDistance);
-    self.y = self.minDistance + Math.random() * (MAPHEIGHT - minDistanceYBorder - self.height - self.minDistance);
+    self.x = minDistanceXBorder + Math.random() * (MAPWIDTH - minDistanceXBorder * 2 - self.width);
+    self.y = minDistanceYBorder + Math.random() * (MAPHEIGHT - minDistanceYBorder * 2 - self.height);
   } while (self.isTooCloseToAnyHouse());
 
-  var numberOfDoors = Math.ceil(Math.random() * 2);
+  var numberOfDoors =  1 + Math.ceil(Math.random() * 3);
   var doorPos = {
     leftWall: false,
     topWall: false,
