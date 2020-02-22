@@ -395,6 +395,7 @@ var Player = function(id){
   self.acceleration =   0.2;
   self.attackTimer =    0;
   self.attackRate =     1000 / 100;
+  self.team = '';
 
   var super_update = self.update;
   self.update = function () {
@@ -595,7 +596,8 @@ var Player = function(id){
       maxStamina: self.maxStamina,
       score:      self.score,
       killCount:  self.killCount,
-      deathCount: self.deathCount
+      deathCount: self.deathCount,
+      team:       self.team
     }
   };
   self.getUpdatePack = function(){
@@ -611,7 +613,8 @@ var Player = function(id){
       stamina:    self.stamina,
       score:      self.score,
       killCount:  self.killCount,
-      deathCount: self.deathCount
+      deathCount: self.deathCount,
+      team:       self.team
     }
   };
 
@@ -624,6 +627,13 @@ Player.list = {};
 
 Player.onConnect = function(socket) {
   var player = Player(socket.id);
+  if(teams.attacker.players.length > teams.defender.players.length){
+    player.team = 'defender';
+    teams.defender.players.push(player);
+  }else {
+    player.team = 'attacker';
+    teams.attacker.players.push(player);
+  }
   player.reSpawn();
 
   socket.on('keyPress', function(data){
@@ -668,6 +678,7 @@ Player.getAllInitpack = function(){
 Player.onDisconnect = function(socket){
   delete Player.list[socket.id];
   removePack.player.push(socket.id);
+  //NEED TEAM AUTO-BALANCE
 };
 
 Player.update = function() {
@@ -678,6 +689,17 @@ Player.update = function() {
     packet.push(player.getUpdatePack());
   }
   return packet;
+};
+
+var teams = {
+  attacker: {
+    score: 0,
+    players: []
+  },
+  defender: {
+    score: 0,
+    players: []
+  }
 };
 
 var Bullet = function(parent, angle){
@@ -694,6 +716,8 @@ var Bullet = function(parent, angle){
   self.timer =    0;
   self.maxTime =  200;
   self.toRemove = false;
+
+  self.friendlyFire = false;
 
   var super_update = self.update;
   self.update = function(){
@@ -715,18 +739,28 @@ var Bullet = function(parent, angle){
 
     for (var i in Player.list) {
       var player = Player.list[i];
-      if(self.isCollidingWithRect(player) && self.parent !== player.id){
-        player.hp -= self.damage;
-        if (player.hp<0){
-          var shooter = Player.list[self.parent];
-          if (shooter){
-            shooter.score++;
-            shooter.killCount++;
-          }
-          player.deathCount++;
-          player.reSpawn();
+      if(self.isCollidingWithRect(player)){
+        var shooter = Player.list[self.parent];
+        var isOpponent = false;
+        if (shooter === player){
+          isOpponent = false;
+        }else if(self.friendlyFire){
+          isOpponent = true;
+        }else if(shooter.team !== player.team){
+          isOpponent = true;
         }
-        self.toRemove = true;
+        if (isOpponent){
+          player.hp -= self.damage;
+          if (player.hp<0){
+            if (shooter){
+              shooter.score++;
+              shooter.killCount++;
+            }
+            player.deathCount++;
+            player.reSpawn();
+          }
+          self.toRemove = true;
+        }
       }
     }
 

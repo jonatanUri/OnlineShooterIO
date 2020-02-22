@@ -28,6 +28,7 @@ var Player = function(initPack){
   self.score =      initPack.score;
   self.killCount =  initPack.killCount;
   self.deathCount = initPack.deathCount;
+  self.team =       initPack.team;
   self.pressingTab = false;
 
   self.draw = function(){
@@ -42,7 +43,7 @@ var Player = function(initPack){
     ctx.fillStyle = '#222222A0';
     ctx.fillRect(x - barWidth/2 + self.width/2, y - 10, barWidth, 4);
 
-    if (self.id !== selfId){
+    if (self.team !== Player.list[selfId].team){
       ctx.fillStyle = '#FF3622C0';
     } else {
       ctx.fillStyle = '#23C216C0'
@@ -51,7 +52,11 @@ var Player = function(initPack){
     ctx.fillStyle = '#000000';
     ctx.fillText(self.name, x - ctx.measureText(self.name).width/2 + self.width/2, y - 15);
 
-    ctx.fillStyle = '#808080';
+    if (self.team === 'attacker'){
+      ctx.fillStyle = '#ed5f2b';
+    } else {
+      ctx.fillStyle = '#3694c7';
+    }
     ctx.fillRect(x, y, self.width, self.height);
   };
 
@@ -163,6 +168,9 @@ socket.on("update", function(data){
       }
       if(packet.deathCount !== undefined){
         player.deathCount = packet.deathCount;
+      }
+      if(packet.team !== undefined){
+        player.team = packet.team;
       }
     }
   }
