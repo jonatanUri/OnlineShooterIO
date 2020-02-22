@@ -676,9 +676,11 @@ Player.getAllInitpack = function(){
 };
 
 Player.onDisconnect = function(socket){
+  var player = Player.list[socket.id];
+  teams.removePlayer(player);
   delete Player.list[socket.id];
   removePack.player.push(socket.id);
-  //NEED TEAM AUTO-BALANCE
+  teams.autoBalance();
 };
 
 Player.update = function() {
@@ -699,6 +701,23 @@ var teams = {
   defender: {
     score: 0,
     players: []
+  },
+  autoBalance: function () {
+    if(teams.attacker.players.length > teams.defender.players.length + 1){
+      teams.attacker.players[teams.attacker.players.length - 1].team = 'defender';
+      teams.defender.players.push(teams.attacker.players.pop());
+    }
+    if(teams.attacker.players.length + 1 < teams.defender.players.length ){
+      teams.defender.players[teams.defender.players.length - 1].team = 'attacker';
+      teams.attacker.players.push(teams.defender.players.pop());
+    }
+  },
+  removePlayer: function (player) {
+    if (player.team === 'attacker'){
+      teams.attacker.players.splice(teams.attacker.players.indexOf(player), 1);
+    } else {
+      teams.defender.players.splice(teams.defender.players.indexOf(player), 1);
+    }
   }
 };
 
