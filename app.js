@@ -523,8 +523,13 @@ var Player = function(id){
     self.hp = self.hpMax;
     self.stamina = self.maxStamina;
     do{
-      self.x = Math.random() * MAPWIDTH;
-      self.y = Math.random() * MAPHEIGHT;
+      if(self.team === 'attacker'){
+        self.x = Math.random() * spawnAreas.attacker.width + spawnAreas.attacker.x;
+        self.y = Math.random() * spawnAreas.attacker.height + spawnAreas.attacker.y
+      } else {
+        self.x = Math.random() * spawnAreas.defender.width + spawnAreas.defender.x;
+        self.y = Math.random() * spawnAreas.defender.height + spawnAreas.defender.y
+      }
     }while (self.isCollidingWithAnyWalls());
   };
 
@@ -660,9 +665,10 @@ Player.onConnect = function(socket) {
 
   socket.emit('init', {
     selfId: socket.id,
-    player: Player.getAllInitpack(),
-    bullet: Bullet.getAllInitpack(),
-    wall:   Wall.getAllInitpack(),
+    player:     Player.getAllInitpack(),
+    bullet:     Bullet.getAllInitpack(),
+    wall:       Wall.getAllInitpack(),
+    spawnAreas: spawnAreas
   })
 
 };
@@ -696,11 +702,23 @@ Player.update = function() {
 var teams = {
   attacker: {
     score: 0,
-    players: []
+    players: [],
+    spawnArea: {
+      x: 0,
+      y: 0,
+      width: 150,
+      height: MAPHEIGHT
+    }
   },
   defender: {
     score: 0,
-    players: []
+    players: [],
+    spawnArea: {
+      x: MAPWIDTH - 150,
+      y: 0,
+      width: 150,
+      height: MAPHEIGHT
+    }
   },
   autoBalance: function () {
     if(teams.attacker.players.length > teams.defender.players.length + 1){
@@ -719,6 +737,11 @@ var teams = {
       teams.defender.players.splice(teams.defender.players.indexOf(player), 1);
     }
   }
+};
+
+var spawnAreas = {
+  attacker: teams.attacker.spawnArea,
+  defender: teams.defender.spawnArea
 };
 
 var Bullet = function(parent, angle){

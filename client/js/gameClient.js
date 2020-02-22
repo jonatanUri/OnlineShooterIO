@@ -13,6 +13,11 @@ var nameBox = document.getElementById("nameBox");
 nameBox.addEventListener("change", emitNewName);
 nameBox.addEventListener("onkeypress", emitNewName);
 
+var spawnAreas = {
+  attacker: {},
+  defender: {}
+};
+
 var Player = function(initPack){
   var self = {};
   self.id =         initPack.id;
@@ -34,8 +39,6 @@ var Player = function(initPack){
   self.draw = function(){
     var x = self.x - Player.list[selfId].x + WIDTH/2;
     var y = self.y - Player.list[selfId].y + HEIGHT/2;
-
-
 
     var barWidth = 30;
 
@@ -126,6 +129,17 @@ socket.on('init',function(data){
       new Bullet(data.bullet[i]);
     }
   }
+  if(data.spawnAreas){
+    spawnAreas.attacker.x      = data.spawnAreas.attacker.x;
+    spawnAreas.attacker.y      = data.spawnAreas.attacker.y;
+    spawnAreas.attacker.width  = data.spawnAreas.attacker.width;
+    spawnAreas.attacker.height = data.spawnAreas.attacker.height;
+
+    spawnAreas.defender.x      = data.spawnAreas.defender.x;
+    spawnAreas.defender.y      = data.spawnAreas.defender.y;
+    spawnAreas.defender.width  = data.spawnAreas.defender.width;
+    spawnAreas.defender.height = data.spawnAreas.defender.height;
+  }
 });
 
 socket.on("update", function(data){
@@ -210,6 +224,7 @@ setInterval(function(){
   if(!selfId)
     return;
   ctx.clearRect(0, 0, WIDTH, HEIGHT);
+  drawSpawnAreas();
   drawScore();
   drawPosition();
 
@@ -227,6 +242,17 @@ setInterval(function(){
   drawStamina();
 
 }, 1000/45);
+
+var drawSpawnAreas = function () {
+  ctx.fillStyle = '#ed5f2b30';
+  ctx.fillRect(spawnAreas.attacker.x - Player.list[selfId].x + WIDTH/2,
+               spawnAreas.attacker.y - Player.list[selfId].y + WIDTH/2,
+                  spawnAreas.attacker.width, spawnAreas.attacker.height);
+  ctx.fillStyle = '#3694c730';
+  ctx.fillRect(spawnAreas.defender.x - Player.list[selfId].x + WIDTH/2,
+               spawnAreas.defender.y - Player.list[selfId].y + WIDTH/2,
+                  spawnAreas.defender.width, spawnAreas.defender.height);
+};
 
 var drawScore = function(){
   ctx.fillStyle = '#404040';
