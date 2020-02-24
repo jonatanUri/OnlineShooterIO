@@ -10,6 +10,7 @@ app.get('/', function(req, res){
 });
 app.use('/client', express.static(__dirname + '/client'));
 app.use('/client', express.static(__dirname + '/client/js'));
+app.use('/client', express.static(__dirname + '/client/audio'));
 serv.listen(2000);
 
 (async () => {
@@ -19,7 +20,7 @@ serv.listen(2000);
 
 var SOCKET_LIST = {};
 
-var initPack = {player:[], bullet:[], wall:[]};
+var initPack = {player:[], bullet:[], wall:[], bomb: undefined};
 var removePack = {player:[], bullet:[], wall:[]};
 var MAPWIDTH = 2000;
 var MAPHEIGHT = 1000;
@@ -366,6 +367,70 @@ var createNewMap = function () {
 
 createNewMap();
 
+var Bomb = function () {
+  var self = Entity();
+
+  self.width = 10;
+  self.height = 10;
+  self.planted = false;
+  self.timer = 0;
+  self.timeToExplode = 1000 / 40 * 40;
+
+  self.explode = function() {
+    //NEED TO IMPLEMENT
+    for (var i = 0; i < 40; i++){
+      var bullet = Bullet('bomb', Math.random()*360);
+      bullet.x = self.x;
+      bullet.y = self.y;
+      bullet.damage = 30;
+    }
+    bomb = undefined;
+  };
+
+  self.update = function () {
+    if (self.timer++ >= self.timeToExplode){
+      self.explode();
+    }
+  };
+
+  self.getInitPack = function (){
+    return{
+      x: self.x,
+      y: self.y,
+      width: self.width,
+      height: self.height,
+      planted: self.planted,
+      timer: self.timer,
+      timeToExplode: self.timeToExplode,
+    }
+  };
+
+  self.getUpdatePack = function (){
+    return{
+      x: self.x,
+      y: self.y,
+      width: self.width,
+      height: self.height,
+      planted: self.planted,
+      timer: self.timer,
+      timeToExplode: self.timeToExplode,
+    }
+  };
+
+  initPack.bomb = (self.getInitPack());
+  return self;
+};
+
+var bomb = undefined;
+
+Bomb.update = function () {
+  bomb.update();
+  if(bomb !== undefined){
+    return bomb.getUpdatePack();
+  }
+  return undefined
+};
+
 var Player = function(id){
   var self = Entity();
 
@@ -395,13 +460,20 @@ var Player = function(id){
   self.acceleration =   0.2;
   self.attackTimer =    0;
   self.attackRate =     1000 / 100;
-  self.team = '';
+  self.team =           '';
+  self.pressingInteract = false;
+  self.canInteract =    false;
+  self.isInteracting =  false;
+  self.interactTimer =  0;
+  self.timeToInteract = 1000 / 40 * 8;
 
   var super_update = self.update;
   self.update = function () {
     self.updateSpeed();
     super_update();
     self.handleWallCollision();
+    self.updateCanInteract();
+    self.updateInteracting();
 
     self.attackTimer++;
     if (self.pressingAttack && self.attackTimer >= self.attackRate){
@@ -412,6 +484,45 @@ var Player = function(id){
       */
       self.shootBullet(self.mouseAngle);
       self.attackTimer = 0;
+    }
+  };
+
+  self.updateCanInteract = function(){
+    self.canInteract = false;
+    if (self.speedX === 0 && self.speedY === 0){
+      if (self.team === 'attacker'){
+        if (bomb === undefined){
+          if (self.isCollidingWithRect(areas.plant)){
+            self.canInteract = true;
+          }
+        }
+      }else {
+        if (bomb){
+          if (self.getDistance(bomb) < 40){
+            self.canInteract = true;
+          }
+        }
+      }
+    }
+  };
+
+  self.updateInteracting = function(){
+    if(self.pressingInteract && self.canInteract){
+        if (self.interactTimer++ > self.timeToInteract){
+          self.interact();
+        }
+    } else {
+      self.interactTimer = 0;
+    }
+  };
+
+  self.interact = function() {
+    if (self.team === 'attacker'){
+      bomb = new Bomb();
+      bomb.x = self.x;
+      bomb.y = self.y;
+    } else {
+      bomb = undefined;
     }
   };
 
@@ -586,40 +697,44 @@ var Player = function(id){
     }
   };
 
-
   self.getInitPack = function(){
     return {
-      id:         self.id,
-      name:       self.name,
-      x:          self.x,
-      y:          self.y,
-      width:      self.width,
-      height:     self.height,
-      hp:         self.hp,
-      hpMax:      self.hpMax,
-      stamina:    self.stamina,
-      maxStamina: self.maxStamina,
-      score:      self.score,
-      killCount:  self.killCount,
-      deathCount: self.deathCount,
-      team:       self.team
+      id:          self.id,
+      name:        self.name,
+      x:           self.x,
+      y:           self.y,
+      width:       self.width,
+      height:      self.height,
+      hp:          self.hp,
+      hpMax:       self.hpMax,
+      stamina:     self.stamina,
+      maxStamina:  self.maxStamina,
+      score:       self.score,
+      killCount:   self.killCount,
+      deathCount:  self.deathCount,
+      team:        self.team,
+      canInteract: self.canInteract,
+      interactTimer: self.interactTimer,
+      timeToInteract: self.timeToInteract
     }
   };
   self.getUpdatePack = function(){
     return {
-      id:         self.id,
-      name:       self.name,
-      x:          self.x,
-      y:          self.y,
-      width:      self.width,
-      height:     self.height,
-      hp:         self.hp,
-      hpMax:      self.hpMax,
-      stamina:    self.stamina,
-      score:      self.score,
-      killCount:  self.killCount,
-      deathCount: self.deathCount,
-      team:       self.team
+      id:          self.id,
+      name:        self.name,
+      x:           self.x,
+      y:           self.y,
+      width:       self.width,
+      height:      self.height,
+      hp:          self.hp,
+      hpMax:       self.hpMax,
+      stamina:     self.stamina,
+      score:       self.score,
+      killCount:   self.killCount,
+      deathCount:  self.deathCount,
+      team:        self.team,
+      canInteract: self.canInteract,
+      interactTimer: self.interactTimer
     }
   };
 
@@ -642,20 +757,31 @@ Player.onConnect = function(socket) {
   player.reSpawn();
 
   socket.on('keyPress', function(data){
-    if(data.inputId === 'left'){
-      player.pressingLeft = data.state;
-    }else if(data.inputId === 'right'){
-      player.pressingRight = data.state;
-    }else if(data.inputId === 'up'){
-      player.pressingUp = data.state;
-    }else if(data.inputId === 'down'){
-      player.pressingDown = data.state;
-    }else if(data.inputId === 'shift'){
-      player.pressingShift = data.state;
-    }else if(data.inputId === 'attack'){
-      player.pressingAttack = data.state;
-    }else if(data.inputId === 'mouseAngle'){
-      player.mouseAngle = data.state;
+    switch (data.inputId) {
+      case 'left':
+        player.pressingLeft = data.state;
+        break;
+      case 'right':
+        player.pressingRight = data.state;
+        break;
+      case 'up':
+        player.pressingUp = data.state;
+        break;
+      case 'down':
+        player.pressingDown = data.state;
+        break;
+      case 'shift':
+        player.pressingShift = data.state;
+        break;
+      case 'attack':
+        player.pressingAttack = data.state;
+        break;
+      case 'mouseAngle':
+        player.mouseAngle = data.state;
+        break;
+      case 'interact':
+        player.pressingInteract = data.state;
+        break;
     }
   });
 
@@ -794,7 +920,7 @@ var Bullet = function(parent, angle){
         var isOpponent = false;
         if (shooter === player){
           isOpponent = false;
-        }else if(self.friendlyFire){
+        }else if(self.friendlyFire || self.parent === 'bomb'){
           isOpponent = true;
         }else if(shooter.team !== player.team){
           isOpponent = true;
@@ -885,6 +1011,9 @@ setInterval(function(){
     player: Player.update(),
     bullet: Bullet.update(),
   };
+  if (bomb !== undefined){
+    updatePack.bomb = Bomb.update();
+  }
 
   for (var id in SOCKET_LIST){
     var socket = SOCKET_LIST[id];
@@ -896,6 +1025,8 @@ setInterval(function(){
   initPack.player = [];
   initPack.bullet = [];
   initPack.wall = [];
+  initPack.bomb = undefined;
+
   removePack.player = [];
   removePack.bullet = [];
   removePack.wall = [];

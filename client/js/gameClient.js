@@ -19,6 +19,8 @@ var areas = {
   plant: {},
 };
 
+var bomb = undefined;
+
 var Player = function(initPack){
   var self = {};
   self.id =         initPack.id;
@@ -35,7 +37,10 @@ var Player = function(initPack){
   self.killCount =  initPack.killCount;
   self.deathCount = initPack.deathCount;
   self.team =       initPack.team;
+  self.canInteract = initPack.canInteract;
   self.pressingTab = false;
+  self.interactTimer = initPack.interactTimer;
+  self.timeToInteract = initPack.timeToInteract;
 
   self.draw = function(){
     var x = self.x - Player.list[selfId].x + WIDTH/2;
@@ -146,6 +151,9 @@ socket.on('init',function(data){
     areas.plant.width     = data.areas.plant.width;
     areas.plant.height    = data.areas.plant.height;
   }
+  if(data.bomb){
+    bomb = data.bomb
+  }
 });
 
 socket.on("update", function(data){
@@ -192,6 +200,12 @@ socket.on("update", function(data){
       if(packet.team !== undefined){
         player.team = packet.team;
       }
+      if(packet.canInteract !== undefined){
+        player.canInteract = packet.canInteract;
+      }
+      if(packet.interactTimer !== undefined){
+        player.interactTimer = packet.interactTimer;
+      }
     }
   }
   for (var i = 0; i < data.bullet.length; i++) {
@@ -211,6 +225,11 @@ socket.on("update", function(data){
         bullet.height = packet.height;
       }
     }
+  }
+  if (data.bomb !== undefined){
+    bomb = data.bomb;
+  } else {
+    bomb = undefined;
   }
 });
 
@@ -244,10 +263,68 @@ setInterval(function(){
     Bullet.list[i].draw();
   }
 
+  drawInteract();
+  drawBomb();
   drawHp();
   drawStamina();
 
 }, 1000/45);
+
+var drawBomb = function () {
+  if (bomb !== undefined){
+    var x = bomb.x - Player.list[selfId].x + WIDTH/2;
+    var y = bomb.y - Player.list[selfId].y + HEIGHT/2;
+    ctx.fillStyle = "#000000";
+    ctx.fillRect(x, y, bomb.width, bomb.height);
+    ctx.fillStyle = bombColor;
+    ctx.fillRect(x, y, bomb.width, bomb.height);
+  }
+};
+
+var bombColor = "#FF0000";
+var bombColorCounter = 255;
+var bombSound = new Audio('../client/audio/bombSound.mp3');
+setInterval(function () {
+  if (bomb !== undefined){
+    var counterMinus = Math.floor(bomb.timer / bomb.timeToExplode * 25);
+    bombColorCounter -= counterMinus;
+    if (bombColorCounter <= 0){
+      bombColorCounter = 255;
+      bombSound.currentTime = 0;
+      bombSound.play();
+    }
+    var bombColorCounterHexa = bombColorCounter;
+    bombColor = "#FF0000" + Math.floor(bombColorCounterHexa).toString(16);
+  }
+}, 1000/45);
+
+var interactBarWidth = 40;
+var interactBarHeight = 5;
+
+var drawInteract = function () {
+  if(Player.list[selfId].canInteract){
+    var interactText = '';
+    var barStyle = '';
+    if(Player.list[selfId].team === 'attacker'){
+      interactText = 'Hold F to plant the bomb';
+      barStyle = '#FF0000';
+    } else {
+      interactText = 'Hold F to defuse';
+      barStyle = '#0000FF';
+    }
+    var textWidth = ctx.measureText(interactText).width;
+    ctx.fillStyle = '#000000';
+    ctx.fillText(interactText, WIDTH/2 - textWidth/2, HEIGHT/2 + 30);
+    if(Player.list[selfId].interactTimer > 0){
+      ctx.fillStyle = '#10101030';
+      ctx.fillRect(WIDTH/2 - interactBarWidth/2, HEIGHT/2 + 40, interactBarWidth, interactBarHeight);
+      var interactWidth = interactBarWidth * (Player.list[selfId].interactTimer / Player.list[selfId].timeToInteract);
+      ctx.fillStyle = barStyle;
+      ctx.fillRect(WIDTH/2 - interactBarWidth/2, HEIGHT/2 + 40, interactWidth, interactBarHeight);
+
+    }
+  }
+};
 
 var drawAreas = function () {
   ctx.fillStyle = '#ed5f2b30';
@@ -318,6 +395,9 @@ document.onkeydown = function(event){
     event.preventDefault();
     Player.list[selfId].pressingTab = true;
   }
+  else if(event.keyCode === 70){ //F
+    socket.emit('keyPress', {inputId: 'interact', state: true});
+  }
 };
 document.onkeyup = function(event){
   if(event.keyCode === 68){ //D
@@ -332,12 +412,15 @@ document.onkeyup = function(event){
   else if(event.keyCode === 87){ //W
     socket.emit('keyPress', {inputId: 'up', state:false});
   }
-  else  if(event.keyCode === 16){
+  else if(event.keyCode === 16){ //Shift
     socket.emit('keyPress', {inputId: 'shift', state: false});
   }
   else if(event.keyCode === 9){ //Tab
     event.preventDefault();
     Player.list[selfId].pressingTab = false;
+  }
+  else if(event.keyCode === 70){ //F
+    socket.emit('keyPress', {inputId: 'interact', state: false});
   }
 };
 document.onmousedown = function(event){
