@@ -524,11 +524,11 @@ var Player = function(id){
     self.stamina = self.maxStamina;
     do{
       if(self.team === 'attacker'){
-        self.x = Math.random() * spawnAreas.attacker.width + spawnAreas.attacker.x;
-        self.y = Math.random() * spawnAreas.attacker.height + spawnAreas.attacker.y
+        self.x = Math.random() * areas.attacker.width + areas.attacker.x;
+        self.y = Math.random() * areas.attacker.height + areas.attacker.y
       } else {
-        self.x = Math.random() * spawnAreas.defender.width + spawnAreas.defender.x;
-        self.y = Math.random() * spawnAreas.defender.height + spawnAreas.defender.y
+        self.x = Math.random() * areas.defender.width + areas.defender.x;
+        self.y = Math.random() * areas.defender.height + areas.defender.y
       }
     }while (self.isCollidingWithAnyWalls());
   };
@@ -665,10 +665,10 @@ Player.onConnect = function(socket) {
 
   socket.emit('init', {
     selfId: socket.id,
-    player:     Player.getAllInitpack(),
-    bullet:     Bullet.getAllInitpack(),
-    wall:       Wall.getAllInitpack(),
-    spawnAreas: spawnAreas
+    player: Player.getAllInitpack(),
+    bullet: Bullet.getAllInitpack(),
+    wall:   Wall.getAllInitpack(),
+    areas:  areas
   })
 
 };
@@ -739,9 +739,17 @@ var teams = {
   }
 };
 
-var spawnAreas = {
+var plantArea = {
+  x: 50 + MAPWIDTH / 2 + Math.random() * 50,
+  y: Math.random() * (MAPHEIGHT - 250),
+  width: 200 + Math.random() * 50,
+  height: 200 + Math.random() * 50,
+};
+
+var areas = {
   attacker: teams.attacker.spawnArea,
-  defender: teams.defender.spawnArea
+  defender: teams.defender.spawnArea,
+  plant: plantArea
 };
 
 var Bullet = function(parent, angle){

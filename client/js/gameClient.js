@@ -13,9 +13,10 @@ var nameBox = document.getElementById("nameBox");
 nameBox.addEventListener("change", emitNewName);
 nameBox.addEventListener("onkeypress", emitNewName);
 
-var spawnAreas = {
+var areas = {
   attacker: {},
-  defender: {}
+  defender: {},
+  plant: {},
 };
 
 var Player = function(initPack){
@@ -129,16 +130,21 @@ socket.on('init',function(data){
       new Bullet(data.bullet[i]);
     }
   }
-  if(data.spawnAreas){
-    spawnAreas.attacker.x      = data.spawnAreas.attacker.x;
-    spawnAreas.attacker.y      = data.spawnAreas.attacker.y;
-    spawnAreas.attacker.width  = data.spawnAreas.attacker.width;
-    spawnAreas.attacker.height = data.spawnAreas.attacker.height;
+  if(data.areas){
+    areas.attacker.x      = data.areas.attacker.x;
+    areas.attacker.y      = data.areas.attacker.y;
+    areas.attacker.width  = data.areas.attacker.width;
+    areas.attacker.height = data.areas.attacker.height;
 
-    spawnAreas.defender.x      = data.spawnAreas.defender.x;
-    spawnAreas.defender.y      = data.spawnAreas.defender.y;
-    spawnAreas.defender.width  = data.spawnAreas.defender.width;
-    spawnAreas.defender.height = data.spawnAreas.defender.height;
+    areas.defender.x      = data.areas.defender.x;
+    areas.defender.y      = data.areas.defender.y;
+    areas.defender.width  = data.areas.defender.width;
+    areas.defender.height = data.areas.defender.height;
+
+    areas.plant.x         = data.areas.plant.x;
+    areas.plant.y         = data.areas.plant.y;
+    areas.plant.width     = data.areas.plant.width;
+    areas.plant.height    = data.areas.plant.height;
   }
 });
 
@@ -224,7 +230,7 @@ setInterval(function(){
   if(!selfId)
     return;
   ctx.clearRect(0, 0, WIDTH, HEIGHT);
-  drawSpawnAreas();
+  drawAreas();
   drawScore();
   drawPosition();
 
@@ -243,15 +249,19 @@ setInterval(function(){
 
 }, 1000/45);
 
-var drawSpawnAreas = function () {
+var drawAreas = function () {
   ctx.fillStyle = '#ed5f2b30';
-  ctx.fillRect(spawnAreas.attacker.x - Player.list[selfId].x + WIDTH/2,
-               spawnAreas.attacker.y - Player.list[selfId].y + WIDTH/2,
-                  spawnAreas.attacker.width, spawnAreas.attacker.height);
+  ctx.fillRect(areas.attacker.x - Player.list[selfId].x + WIDTH/2,
+               areas.attacker.y - Player.list[selfId].y + HEIGHT/2,
+                  areas.attacker.width, areas.attacker.height);
   ctx.fillStyle = '#3694c730';
-  ctx.fillRect(spawnAreas.defender.x - Player.list[selfId].x + WIDTH/2,
-               spawnAreas.defender.y - Player.list[selfId].y + WIDTH/2,
-                  spawnAreas.defender.width, spawnAreas.defender.height);
+  ctx.fillRect(areas.defender.x - Player.list[selfId].x + WIDTH/2,
+               areas.defender.y - Player.list[selfId].y + HEIGHT/2,
+                  areas.defender.width, areas.defender.height);
+  ctx.fillStyle = '#D8181870';
+  ctx.fillRect( areas.plant.x - Player.list[selfId].x + WIDTH/2,
+                areas.plant.y - Player.list[selfId].y + HEIGHT/2,
+                   areas.plant.width, areas.plant.height);
 };
 
 var drawScore = function(){
