@@ -286,10 +286,12 @@ setInterval(function(){
 
   drawTeamScore();
   drawRoundTime();
-  drawInteract();
   drawBomb();
-  drawHp();
-  drawStamina();
+  if (!Player.list[selfId].isDead){
+    drawInteract();
+    drawHp();
+    drawStamina();
+  }
 
   if(Player.list[selfId].isDead){
     ctx.fillStyle = '#00000030';

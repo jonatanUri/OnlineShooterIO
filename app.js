@@ -476,19 +476,21 @@ var Player = function(id){
   self.update = function () {
     self.updateSpeed();
     super_update();
-    self.handleWallCollision();
-    self.updateCanInteract();
-    self.updateInteracting();
+    if(!self.isDead){
+      self.handleWallCollision();
+      self.updateCanInteract();
+      self.updateInteracting();
 
-    self.attackTimer++;
-    if (self.pressingAttack && self.attackTimer >= self.attackRate){
-      /*  ---- "SHOTGUN" ----
-      for (var i = -3; i < 3; i++){
-        self.shootBullet(i*10 + self.mouseAngle)
+      self.attackTimer++;
+      if (self.pressingAttack && self.attackTimer >= self.attackRate){
+        /*  ---- "SHOTGUN" ----
+        for (var i = -3; i < 3; i++){
+          self.shootBullet(i*10 + self.mouseAngle)
+        }
+        */
+        self.shootBullet(self.mouseAngle);
+        self.attackTimer = 0;
       }
-      */
-      self.shootBullet(self.mouseAngle);
-      self.attackTimer = 0;
     }
   };
 
@@ -549,6 +551,10 @@ var Player = function(id){
   };
 
   self.updateSpeed = function(){
+    if (self.isDead){
+      self.stamina++;
+    }
+
     if(self.pressingShift && self.stamina > 0){
       self.stamina--;
       self.maxSpeed = self.sprintMaxSpeed;
@@ -566,10 +572,9 @@ var Player = function(id){
         self.speedY += self.acceleration;
       }
     }
-
     if(!self.pressingDown && !self.pressingRight &&
-       !self.pressingLeft && !self.pressingUp &&
-       self.stamina < self.maxStamina){
+        !self.pressingLeft && !self.pressingUp &&
+        self.stamina < self.maxStamina){
       self.stamina++;
     }
 
@@ -638,6 +643,8 @@ var Player = function(id){
   };
 
   self.reSpawn = function () {
+    self.speedX = 0;
+    self.speedY = 0;
     self.hp = self.hpMax;
     self.isDead = false;
     self.stamina = self.maxStamina;
@@ -827,9 +834,7 @@ Player.update = function() {
   var packet = [];
   for (var id in Player.list){
     var player = Player.list[id];
-    if (!player.isDead){
-      player.update();
-    }
+    player.update();
     packet.push(player.getUpdatePack());
   }
   return packet;
