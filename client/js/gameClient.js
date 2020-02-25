@@ -19,6 +19,9 @@ var areas = {
   plant: {},
 };
 
+var attackerScore = 0;
+var defenderScore = 0;
+
 var bomb = undefined;
 
 var Player = function(initPack){
@@ -226,10 +229,14 @@ socket.on("update", function(data){
       }
     }
   }
-  if (data.bomb !== undefined){
-    bomb = data.bomb;
-  } else {
-    bomb = undefined;
+
+  bomb = data.bomb;
+
+  if (data.attackerScore !== undefined){
+    attackerScore = data.attackerScore;
+  }
+  if (data.defenderScore !== undefined){
+    defenderScore = data.defenderScore;
   }
 });
 
@@ -263,6 +270,7 @@ setInterval(function(){
     Bullet.list[i].draw();
   }
 
+  drawTeamScore();
   drawInteract();
   drawBomb();
   drawHp();
@@ -351,6 +359,21 @@ var drawScore = function(){
   ctx.fillText('Score: ' + Player.list[selfId].score, 3, 10);
   ctx.fillText('Kills: ' + Player.list[selfId].killCount, 3, 20);
   ctx.fillText('Deaths: ' + Player.list[selfId].deathCount, 3, 30);
+};
+
+var drawTeamScore = function () {
+  ctx.font = "20px Arial";
+  var x = WIDTH/2 - ctx.measureText(attackerScore.toString() + ' : ' + defenderScore.toString()).width;
+  ctx.fillStyle = '#ed5f2b';
+  ctx.fillText(attackerScore.toString(), x, 20);
+  x += ctx.measureText(attackerScore.toString()).width;
+  ctx.fillStyle = '#000000';
+  ctx.fillText(' : ', x, 20);
+  x += ctx.measureText(' : ').width;
+  ctx.fillStyle = '#3694c7';
+  ctx.fillText(defenderScore.toString(), x, 20);
+
+  ctx.font = "10px Arial";
 };
 
 var hpBarWidth = 150;

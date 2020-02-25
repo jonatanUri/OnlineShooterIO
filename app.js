@@ -387,6 +387,7 @@ var Bomb = function () {
       bullet.damage = 40;
     }
     bomb = undefined;
+    teams.attacker.score++;
   };
 
   self.update = function () {
@@ -525,6 +526,7 @@ var Player = function(id){
       bomb.y = self.y + self.height/2 - bomb.height/2;
     } else {
       bomb.defused = true;
+      teams.defender.score++;
     }
   };
 
@@ -1016,6 +1018,8 @@ setInterval(function(){
   if (bomb !== undefined){
     updatePack.bomb = Bomb.update();
   }
+  updatePack.attackerScore = teams.attacker.score;
+  updatePack.defenderScore = teams.defender.score;
 
   for (var id in SOCKET_LIST){
     var socket = SOCKET_LIST[id];
