@@ -372,7 +372,7 @@ var Bomb = function () {
 
   self.width = 10;
   self.height = 10;
-  self.planted = false;
+  self.defused = false;
   self.timer = 0;
   self.timeToExplode = 1000 / 40 * 40;
 
@@ -390,7 +390,7 @@ var Bomb = function () {
   };
 
   self.update = function () {
-    if (self.timer++ >= self.timeToExplode){
+    if (!self.defused && self.timer++ >= self.timeToExplode){
       self.explode();
     }
   };
@@ -401,7 +401,7 @@ var Bomb = function () {
       y: self.y,
       width: self.width,
       height: self.height,
-      planted: self.planted,
+      defused: self.defused,
       timer: self.timer,
       timeToExplode: self.timeToExplode,
     }
@@ -413,7 +413,7 @@ var Bomb = function () {
       y: self.y,
       width: self.width,
       height: self.height,
-      planted: self.planted,
+      defused: self.defused,
       timer: self.timer,
       timeToExplode: self.timeToExplode,
     }
@@ -499,7 +499,7 @@ var Player = function(id){
           }
         }
       }else {
-        if (bomb){
+        if (bomb && !bomb.defused){
           if (self.getDistance(bomb) < 40){
             self.canInteract = true;
           }
@@ -524,7 +524,7 @@ var Player = function(id){
       bomb.x = self.x + self.width/2 - bomb.width/2;
       bomb.y = self.y + self.height/2 - bomb.height/2;
     } else {
-      bomb = undefined;
+      bomb.defused = true;
     }
   };
 

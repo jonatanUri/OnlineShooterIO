@@ -274,9 +274,14 @@ var drawBomb = function () {
   if (bomb !== undefined){
     var x = bomb.x - Player.list[selfId].x + WIDTH/2;
     var y = bomb.y - Player.list[selfId].y + HEIGHT/2;
-    ctx.fillStyle = "#000000";
-    ctx.fillRect(x, y, bomb.width, bomb.height);
-    ctx.fillStyle = bombColor;
+    if(!bomb.defused){
+      ctx.fillStyle = "#000000";
+      ctx.fillRect(x, y, bomb.width, bomb.height);
+      ctx.fillStyle = bombColor;
+    }
+    else {
+      ctx.fillStyle = '#26BB37'
+    }
     ctx.fillRect(x, y, bomb.width, bomb.height);
   }
 };
@@ -285,7 +290,7 @@ var bombColor = "#FF0000";
 var bombColorCounter = 255;
 var bombSound = new Audio('../client/audio/bombSound.mp3');
 setInterval(function () {
-  if (bomb !== undefined){
+  if (bomb !== undefined && !bomb.defused){
     var counterMinus = Math.floor(bomb.timer / bomb.timeToExplode * 25);
     bombColorCounter -= counterMinus;
     if (bombColorCounter <= 0){
