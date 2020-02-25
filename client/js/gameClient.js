@@ -1,4 +1,4 @@
-var socket = io();
+var socket = io({transports: ['websocket']});
 var display = document.getElementById("display");
 var WIDTH = display.width;
 var HEIGHT = display.height;
@@ -34,6 +34,7 @@ var Player = function(initPack){
   self.height =     initPack.height;
   self.hp =         initPack.hp;
   self.hpMax =      initPack.hpMax;
+  self.isDead =     initPack.isDead;
   self.stamina =    initPack.stamina;
   self.maxStamina = initPack.maxStamina;
   self.score =      initPack.score;
@@ -46,30 +47,32 @@ var Player = function(initPack){
   self.timeToInteract = initPack.timeToInteract;
 
   self.draw = function(){
-    var x = self.x - Player.list[selfId].x + WIDTH/2;
-    var y = self.y - Player.list[selfId].y + HEIGHT/2;
+    if(!self.isDead){
+      var x = self.x - Player.list[selfId].x + WIDTH/2;
+      var y = self.y - Player.list[selfId].y + HEIGHT/2;
 
-    var barWidth = 30;
+      var barWidth = 30;
 
-    var hpWidth = barWidth * self.hp / self.hpMax;
-    ctx.fillStyle = '#222222A0';
-    ctx.fillRect(x - barWidth/2 + self.width/2, y - 10, barWidth, 4);
+      var hpWidth = barWidth * self.hp / self.hpMax;
+      ctx.fillStyle = '#222222A0';
+      ctx.fillRect(x - barWidth/2 + self.width/2, y - 10, barWidth, 4);
 
-    if (self.team !== Player.list[selfId].team){
-      ctx.fillStyle = '#FF3622C0';
-    } else {
-      ctx.fillStyle = '#23C216C0'
+      if (self.team !== Player.list[selfId].team){
+        ctx.fillStyle = '#FF3622C0';
+      } else {
+        ctx.fillStyle = '#23C216C0'
+      }
+      ctx.fillRect(x - barWidth/2 + self.width/2, y - 10, hpWidth, 4);
+      ctx.fillStyle = '#000000';
+      ctx.fillText(self.name, x - ctx.measureText(self.name).width/2 + self.width/2, y - 15);
+
+      if (self.team === 'attacker'){
+        ctx.fillStyle = '#ed5f2b';
+      } else {
+        ctx.fillStyle = '#3694c7';
+      }
+      ctx.fillRect(x, y, self.width, self.height);
     }
-    ctx.fillRect(x - barWidth/2 + self.width/2, y - 10, hpWidth, 4);
-    ctx.fillStyle = '#000000';
-    ctx.fillText(self.name, x - ctx.measureText(self.name).width/2 + self.width/2, y - 15);
-
-    if (self.team === 'attacker'){
-      ctx.fillStyle = '#ed5f2b';
-    } else {
-      ctx.fillStyle = '#3694c7';
-    }
-    ctx.fillRect(x, y, self.width, self.height);
   };
 
   Player.list[self.id] = self;
@@ -209,6 +212,9 @@ socket.on("update", function(data){
       if(packet.interactTimer !== undefined){
         player.interactTimer = packet.interactTimer;
       }
+      if(packet.isDead !== undefined){
+        player.isDead = packet.isDead;
+      }
     }
   }
   for (var i = 0; i < data.bullet.length; i++) {
@@ -275,6 +281,11 @@ setInterval(function(){
   drawBomb();
   drawHp();
   drawStamina();
+
+  if(Player.list[selfId].isDead){
+    ctx.fillStyle = '#00000030';
+    ctx.fillRect(0,0, WIDTH, HEIGHT);
+  }
 
 }, 1000/45);
 
