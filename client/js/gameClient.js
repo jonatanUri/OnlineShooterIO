@@ -285,6 +285,7 @@ setInterval(function(){
   }
 
   drawTeamScore();
+  drawAlivePlayerCount();
   drawRoundTime();
   drawBomb();
   if (!Player.list[selfId].isDead){
@@ -398,6 +399,37 @@ var drawTeamScore = function () {
   ctx.font = "10px Arial";
 };
 
+var drawAlivePlayerCount = function () {
+  var attackerAllCount = 0;
+  var defenderAllCount = 0;
+  var attackerAliveCount = 0;
+  var defenderAliveCount = 0;
+  for (var i in Player.list){
+    if (Player.list[i].team === 'attacker'){
+      attackerAllCount++;
+      if (!Player.list[i].isDead){
+        attackerAliveCount++;
+      }
+    } else {
+      defenderAllCount++;
+      if (!Player.list[i].isDead){
+        defenderAliveCount++;
+      }
+    }
+  }
+
+  ctx.font = "12px Arial";
+  var x = WIDTH/2 - ctx.measureText(attackerAllCount + '/' + attackerAliveCount + '   ' +
+                                          defenderAllCount + '/' + defenderAliveCount).width/2;
+  ctx.fillStyle = '#ed5f2b';
+  ctx.fillText(attackerAllCount + '/' + attackerAliveCount + '   ', x, 32);
+  x += ctx.measureText(attackerAllCount + '/' + attackerAliveCount + '   ').width;
+  ctx.fillStyle = '#3694c7';
+  ctx.fillText(defenderAllCount + '/' + defenderAliveCount, x, 32);
+
+  ctx.font = "10px Arial";
+};
+
 var drawRoundTime = function () {
   var minutes = Math.floor(roundTime / 60);
   var seconds = roundTime - minutes * 60;
@@ -407,7 +439,7 @@ var drawRoundTime = function () {
   var timeString = minutes + ':' + seconds;
   var x = WIDTH/2 - ctx.measureText(timeString).width/2;
   ctx.fillStyle = '#555555';
-  ctx.fillText(timeString, x, 40);
+  ctx.fillText(timeString, x, 45);
 };
 
 var hpBarWidth = 150;
