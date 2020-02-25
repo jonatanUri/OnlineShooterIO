@@ -378,11 +378,13 @@ var Bomb = function () {
 
   self.explode = function() {
     //NEED TO IMPLEMENT
-    for (var i = 0; i < 40; i++){
+    for (var i = 0; i < 50; i++){
       var bullet = Bullet('bomb', Math.random()*360);
       bullet.x = self.x;
       bullet.y = self.y;
-      bullet.damage = 30;
+      bullet.width -= 2;
+      bullet.height -= 2;
+      bullet.damage = 40;
     }
     bomb = undefined;
   };
@@ -519,8 +521,8 @@ var Player = function(id){
   self.interact = function() {
     if (self.team === 'attacker'){
       bomb = new Bomb();
-      bomb.x = self.x;
-      bomb.y = self.y;
+      bomb.x = self.x + self.width/2 - bomb.width/2;
+      bomb.y = self.y + self.height/2 - bomb.height/2;
     } else {
       bomb = undefined;
     }
