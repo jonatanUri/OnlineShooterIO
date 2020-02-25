@@ -528,6 +528,7 @@ var Player = function(id){
       bomb.defused = true;
       teams.defender.score++;
     }
+    self.score += 2;
   };
 
   self.shootBullet = function(angle){
