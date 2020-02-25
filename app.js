@@ -377,7 +377,6 @@ var Bomb = function () {
   self.timeToExplode = 1000 / 40 * 40;
 
   self.explode = function() {
-    //NEED TO IMPLEMENT
     for (var i = 0; i < 50; i++){
       var bullet = Bullet('bomb', Math.random()*360);
       bullet.x = self.x;
@@ -454,6 +453,7 @@ var Player = function(id){
   self.pressingDown =   false;
   self.pressingShift =  false;
   self.pressingAttack = false;
+  self.recoil =         8;
   self.mouseAngle =     0;
   self.speedX =         0;
   self.speedY =         0;
@@ -488,7 +488,7 @@ var Player = function(id){
           self.shootBullet(i*10 + self.mouseAngle)
         }
         */
-        self.shootBullet(self.mouseAngle);
+        self.shootBullet(self.mouseAngle + Math.random() * self.recoil - self.recoil/2);
         self.attackTimer = 0;
       }
     }
