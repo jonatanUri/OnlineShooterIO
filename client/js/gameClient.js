@@ -319,13 +319,13 @@ var drawInteract = function () {
     }
     var textWidth = ctx.measureText(interactText).width;
     ctx.fillStyle = '#000000';
-    ctx.fillText(interactText, WIDTH/2 - textWidth/2, HEIGHT/2 + 30);
+    ctx.fillText(interactText, WIDTH/2 - textWidth/2 + Player.list[selfId].width/2, HEIGHT/2 + 30);
     if(Player.list[selfId].interactTimer > 0){
       ctx.fillStyle = '#10101030';
-      ctx.fillRect(WIDTH/2 - interactBarWidth/2, HEIGHT/2 + 40, interactBarWidth, interactBarHeight);
+      ctx.fillRect(WIDTH/2 - interactBarWidth/2 + Player.list[selfId].width/2, HEIGHT/2 + 40, interactBarWidth, interactBarHeight);
       var interactWidth = interactBarWidth * (Player.list[selfId].interactTimer / Player.list[selfId].timeToInteract);
       ctx.fillStyle = barStyle;
-      ctx.fillRect(WIDTH/2 - interactBarWidth/2, HEIGHT/2 + 40, interactWidth, interactBarHeight);
+      ctx.fillRect(WIDTH/2 - interactBarWidth/2 + Player.list[selfId].width/2, HEIGHT/2 + 40, interactWidth, interactBarHeight);
 
     }
   }
@@ -357,20 +357,20 @@ var hpBarWidth = 150;
 var hpBarHeight = 15;
 var drawHp = function () {
   ctx.fillStyle = '#CFFFCCA0';
-  ctx.fillRect(WIDTH/2 - hpBarWidth/2, HEIGHT-25, hpBarWidth, hpBarHeight);
+  ctx.fillRect(WIDTH/2 - hpBarWidth/2 + Player.list[selfId].width/2, HEIGHT-25, hpBarWidth, hpBarHeight);
   var hpWidth = hpBarWidth * (Player.list[selfId].hp / Player.list[selfId].hpMax);
   ctx.fillStyle = '#23C216C0';
-  ctx.fillRect(WIDTH/2 - hpBarWidth/2, HEIGHT-25, hpWidth, hpBarHeight);
+  ctx.fillRect(WIDTH/2 - hpBarWidth/2 + Player.list[selfId].width/2, HEIGHT-25, hpWidth, hpBarHeight);
 };
 
 var staminaBarWidth = 150;
 var staminaBarHeight = 10;
 var drawStamina = function () {
   ctx.fillStyle = '#FDFFC5A0';
-  ctx.fillRect(WIDTH/2 - staminaBarWidth/2, HEIGHT-10, staminaBarWidth, staminaBarHeight);
+  ctx.fillRect(WIDTH/2 - staminaBarWidth/2 + Player.list[selfId].width/2, HEIGHT-10, staminaBarWidth, staminaBarHeight);
   var staminaWidth = staminaBarWidth * (Player.list[selfId].stamina / Player.list[selfId].maxStamina);
   ctx.fillStyle = '#FFE300C0';
-  ctx.fillRect(WIDTH/2 - staminaBarWidth/2, HEIGHT-10, staminaWidth, staminaBarHeight);
+  ctx.fillRect(WIDTH/2 - staminaBarWidth/2 + Player.list[selfId].width/2, HEIGHT-10, staminaWidth, staminaBarHeight);
 };
 
 var drawPosition = function(){
