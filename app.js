@@ -928,6 +928,7 @@ var round = {
         round.isFinished = true;
       }
       if (round.timer <= 0){
+        teams.defender.score++;
         round.isFinished = true;
       }
       if(bomb === undefined && teams.isAllAttackersDead()){
@@ -1122,7 +1123,7 @@ setInterval(function(){
 }, 1000/40);
 
 setInterval(function () {
-  if(round.timer > 0){
+  if(round.timer > 0 && bomb === undefined){
     round.timer--;
   }
   for (var id in SOCKET_LIST){
