@@ -499,7 +499,7 @@ var Player = function(id){
     if (self.speedX === 0 && self.speedY === 0){
       if (self.team === 'attacker'){
         if (bomb === undefined){
-          if (self.isCollidingWithRect(areas.plant)){
+          if (self.isCollidingWithRect(areas.plant) && !round.isRestarting){
             self.canInteract = true;
           }
         }
