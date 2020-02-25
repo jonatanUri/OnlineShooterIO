@@ -431,15 +431,31 @@ var drawAlivePlayerCount = function () {
 };
 
 var drawRoundTime = function () {
-  var minutes = Math.floor(roundTime / 60);
-  var seconds = roundTime - minutes * 60;
-  if(seconds < 10){
-    seconds = '0'+seconds;
+  if (bomb === undefined){
+    var minutes = Math.floor(roundTime / 60);
+    var seconds = roundTime - minutes * 60;
+    if(seconds < 10){
+      seconds = '0'+seconds;
+    }
+    var timeString = minutes + ':' + seconds;
+    var x = WIDTH/2 - ctx.measureText(timeString).width/2;
+    ctx.fillStyle = '#555555';
+    ctx.fillText(timeString, x, 45);
+  }else {
+    var x = WIDTH/2 - bomb.width/2;
+    var y = 40;
+    if(!bomb.defused){
+      ctx.fillStyle = "#000000";
+      ctx.fillRect(x, y, bomb.width, bomb.height);
+      ctx.fillStyle = bombColor;
+    }
+    else {
+      ctx.fillStyle = '#26BB37'
+    }
+    ctx.fillRect(x, y, bomb.width, bomb.height);
+
   }
-  var timeString = minutes + ':' + seconds;
-  var x = WIDTH/2 - ctx.measureText(timeString).width/2;
-  ctx.fillStyle = '#555555';
-  ctx.fillText(timeString, x, 45);
+
 };
 
 var hpBarWidth = 150;
