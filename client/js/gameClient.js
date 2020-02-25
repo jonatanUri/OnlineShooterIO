@@ -258,6 +258,14 @@ socket.on('remove', function(data) {
   }
 });
 
+var roundTime = 0;
+
+socket.on('roundTime', function (data) {
+  if (data){
+    roundTime = data;
+  }
+});
+
 setInterval(function(){
   if(!selfId)
     return;
@@ -277,6 +285,7 @@ setInterval(function(){
   }
 
   drawTeamScore();
+  drawRoundTime();
   drawInteract();
   drawBomb();
   drawHp();
@@ -374,7 +383,7 @@ var drawScore = function(){
 
 var drawTeamScore = function () {
   ctx.font = "20px Arial";
-  var x = WIDTH/2 - ctx.measureText(attackerScore.toString() + ' : ' + defenderScore.toString()).width;
+  var x = WIDTH/2 - ctx.measureText(attackerScore.toString() + ' : ' + defenderScore.toString()).width/2;
   ctx.fillStyle = '#ed5f2b';
   ctx.fillText(attackerScore.toString(), x, 20);
   x += ctx.measureText(attackerScore.toString()).width;
@@ -385,6 +394,18 @@ var drawTeamScore = function () {
   ctx.fillText(defenderScore.toString(), x, 20);
 
   ctx.font = "10px Arial";
+};
+
+var drawRoundTime = function () {
+  var minutes = Math.floor(roundTime / 60);
+  var seconds = roundTime - minutes * 60;
+  if(seconds < 10){
+    seconds = '0'+seconds;
+  }
+  var timeString = minutes + ':' + seconds;
+  var x = WIDTH/2 - ctx.measureText(timeString).width/2;
+  ctx.fillStyle = '#555555';
+  ctx.fillText(timeString, x, 40);
 };
 
 var hpBarWidth = 150;

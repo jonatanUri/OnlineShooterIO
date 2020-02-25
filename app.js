@@ -911,8 +911,8 @@ var areas = {
 };
 
 var round = {
-  maxTime: 1000 / 40 * 120,
-  timer: 1000 / 40 * 120,
+  maxTime: 120,
+  timer: 120,
   counter: 0,
   isFinished: false,
   isRestarting: false,
@@ -934,7 +934,6 @@ var round = {
         round.isFinished = true;
       }
     }
-    round.timer--;
   },
   startNewRound: function () {
     bomb = undefined;
@@ -1116,3 +1115,13 @@ setInterval(function(){
   removePack.wall = [];
 
 }, 1000/40);
+
+setInterval(function () {
+  if(round.timer > 0){
+    round.timer--;
+  }
+  for (var id in SOCKET_LIST){
+    var socket = SOCKET_LIST[id];
+    socket.emit('roundTime', round.timer);
+  }
+}, 1000);
