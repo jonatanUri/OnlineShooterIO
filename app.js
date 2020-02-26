@@ -482,7 +482,7 @@ var Player = function(id){
   self.canInteract =    false;
   self.isInteracting =  false;
   self.interactTimer =  0;
-  self.timeToInteract = 1000 / 40 * 8;
+  self.timeToInteract = 1000 / 40 * 6;
 
   var super_update = self.update;
   self.update = function () {
@@ -1164,7 +1164,7 @@ setInterval(function(){
 }, 1000/40);
 
 setInterval(function () {
-  if(round.timer > 0 && bomb === undefined){
+  if(round.timer > 0 && bomb === undefined && !round.isRestarting){
     round.timer--;
   }
   for (var id in SOCKET_LIST){
