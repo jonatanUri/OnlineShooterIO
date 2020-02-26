@@ -516,7 +516,7 @@ var Player = function(id){
         }
       }else {
         if (bomb && !bomb.defused){
-          if (self.getDistance(bomb) < 40){
+          if (self.isCollidingWithRect(bomb)){
             self.canInteract = true;
           }
         }
