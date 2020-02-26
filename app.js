@@ -92,8 +92,11 @@ var Wall = function (startPoint, width, height) {
   };
 
   self.endAtPoint = function(point) {
-    self.x = point.x - width;
-    self.y = point.y - height;
+    self.x = point.x - self.width;
+    self.y = point.y - self.height;
+    Wall.list[self.id] = self;
+    initPack.wall.push(self.getInitPack());
+    return self;
   };
 
   Wall.list[self.id] = self;
@@ -293,7 +296,7 @@ var House = function () {
           }
         }
         var wall = new HorizontalWall({x:0, y: 0}, 20 + Math.random() * (self.width * 0.7 - 20));
-        wall.endAtPoint(wallToExtend.getCenterPoint());
+        wall = wall.endAtPoint(wallToExtend.getCenterPoint());
         interiorWalls.push(wall);
         break;
       case 1:
@@ -333,7 +336,7 @@ var House = function () {
           }
         }
         var wall = new VerticalWall({x: 0, y: 0}, 50 + Math.random() * (self.height * 0.7 - 50));
-        wall.endAtPoint(wallToExtend.getCenterPoint());
+        wall = wall.endAtPoint(wallToExtend.getCenterPoint());
         interiorWalls.push(wall);
         break;
     }
@@ -347,6 +350,7 @@ var House = function () {
 House.list = {};
 
 var createNewMap = function () {
+  House.list = {};
   for (var id in Wall.list){
     delete Wall.list[id];
     removePack.wall.push(id);
@@ -354,9 +358,8 @@ var createNewMap = function () {
 
   var topWall = new Wall({x: 0, y: 0}, MAPWIDTH, 10);
   var rightWall = new Wall(topWall.getEndPoint(), 10, MAPHEIGHT);
-  var bottomWall = new Wall(rightWall.getEndPoint(), MAPWIDTH, 10);
-  bottomWall.endAtPoint(rightWall.getEndPoint());
   var leftWall = new Wall(topWall.startPoint, 10, MAPHEIGHT);
+  var bottomWall = new Wall(leftWall.getEndPoint(), MAPWIDTH, 10);
 
   House();
   House();
@@ -950,6 +953,8 @@ var round = {
     }
   },
   startNewRound: function () {
+    round.counter++;
+
     bomb = undefined;
     round.isFinished = false;
     round.isRestarting = false;
@@ -959,6 +964,8 @@ var round = {
     for (var i in Player.list){
       Player.list[i].reSpawn();
     }
+
+    createNewMap();
   }
 };
 
