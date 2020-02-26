@@ -398,8 +398,7 @@ var Bomb = function () {
       bullet.damage = 40;
     }
     bomb = undefined;
-    teams.attacker.score++;
-    round.isFinished = true;
+    teams.handleAttackerWin();
   };
 
   self.update = function () {
@@ -542,7 +541,7 @@ var Player = function(id){
       bomb.y = self.y + self.height/2 - bomb.height/2;
     } else {
       bomb.defused = true;
-      teams.defender.score++;
+      teams.handleDefenderWin();
     }
     self.score += 2;
   };
@@ -911,6 +910,22 @@ var teams = {
       return true;
     }
     return false;
+  },
+  handleAttackerWin: function () {
+    teams.attacker.score++;
+    for (var id in SOCKET_LIST){
+      var socket = SOCKET_LIST[id];
+      socket.emit('attackerWin');
+      round.isFinished = true;
+    }
+  },
+  handleDefenderWin: function () {
+    teams.defender.score++;
+    for (var id in SOCKET_LIST){
+      var socket = SOCKET_LIST[id];
+      socket.emit('defenderWin');
+      round.isFinished = true;
+    }
   }
 };
 
@@ -945,19 +960,16 @@ var round = {
   update: function () {
     if(!round.isFinished && teams.attacker.players.length > 0){
       if(bomb !== undefined && bomb.defused){
-        round.isFinished = true;
+        teams.handleDefenderWin();
       }
       if (round.timer <= 0){
-        teams.defender.score++;
-        round.isFinished = true;
+        teams.handleDefenderWin();
       }
       if(bomb === undefined && teams.isAllAttackersDead()){
-        teams.defender.score++;
-        round.isFinished = true;
+        teams.handleDefenderWin();
       }
       if(teams.isAllDefendersDead()){
-        teams.attacker.score++;
-        round.isFinished = true;
+        teams.handleAttackerWin();
       }
     }
   },

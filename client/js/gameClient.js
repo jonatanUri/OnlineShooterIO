@@ -294,6 +294,7 @@ setInterval(function(){
   drawAlivePlayerCount();
   drawRoundTime();
   drawKillFeed();
+  drawWinText();
   drawBomb();
   if (!Player.list[selfId].isDead){
     drawInteract();
@@ -307,6 +308,46 @@ setInterval(function(){
   }
 
 }, 1000/45);
+
+var winText = '';
+var winnerTeam = '';
+var winTextOpacity = 0;
+
+socket.on('attackerWin', function () {
+  winText = 'Attackers won!';
+  winnerTeam = 'attacker';
+  winTextOpacity = 500;
+});
+
+socket.on('defenderWin', function () {
+  winText = 'Defenders won!';
+  winnerTeam = 'defender';
+  winTextOpacity = 500;
+});
+
+var drawWinText = function () {
+  if (winTextOpacity-- > 0){
+    var opacity;
+    if (winTextOpacity > 255){
+      opacity = 'FF';
+    } else {
+      opacity = winTextOpacity.toString(16);
+    }
+    if (opacity.length < 2){
+      opacity = 0 + opacity;
+    }
+    ctx.font = "20px Arial";
+    var x = WIDTH/2 - ctx.measureText(winText).width/2;
+    var y = 70;
+    if(winnerTeam === 'attacker'){
+      ctx.fillStyle = '#ed5f2b' + opacity;
+    } else {
+      ctx.fillStyle = '#3694c7' + opacity;
+    }
+    ctx.fillText(winText, x, y);
+    ctx.font = "10px Arial";
+  }
+};
 
 var killFeedList = [];
 
