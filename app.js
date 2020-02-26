@@ -1011,6 +1011,8 @@ var Bullet = function(parent, angle){
               }
               player.isDead = true;
               player.deathCount++;
+
+              sendKillFeed(shooter, player);
             }
             self.toRemove = true;
           }
@@ -1066,6 +1068,20 @@ Bullet.getAllInitpack = function(){
     bullets.push(Bullet.list[id].getInitPack());
   }
   return bullets;
+};
+
+var sendKillFeed = function (shooter, killed) {
+  var killFeedData = {
+    shooterName:  shooter.name,
+    shooterTeam:  shooter.team,
+    killedName:   killed.name,
+    killedTeam:   killed.team,
+    opacity:      255
+  };
+  for (var id in SOCKET_LIST){
+    var socket = SOCKET_LIST[id];
+    socket.emit('killFeed', killFeedData);
+  }
 };
 
 var io = require('socket.io')(serv,{});

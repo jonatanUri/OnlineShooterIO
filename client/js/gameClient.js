@@ -287,6 +287,7 @@ setInterval(function(){
   drawTeamScore();
   drawAlivePlayerCount();
   drawRoundTime();
+  drawKillFeed();
   drawBomb();
   if (!Player.list[selfId].isDead){
     drawInteract();
@@ -300,6 +301,44 @@ setInterval(function(){
   }
 
 }, 1000/45);
+
+var killFeedList = [];
+
+socket.on('killFeed', function (data) {
+  killFeedList.push(data);
+});
+
+var drawKillFeed = function () {
+  var y = 20;
+  for (var i = 0; i < killFeedList.length; i++){
+    if (killFeedList[i].opacity-- === 0){
+      killFeedList.splice(i, 1);
+    } else {
+      var x = 400;
+      var opacity = killFeedList[i].opacity.toString(16);
+      if (opacity.length < 2){
+        opacity = 0 + opacity;
+      }
+      if(killFeedList[i].shooterTeam === 'attacker'){
+        ctx.fillStyle = '#ed5f2b' + opacity;
+      } else {
+        ctx.fillStyle = '#3694c7' + opacity;
+      }
+      ctx.fillText(killFeedList[i].shooterName, x, y);
+      x += ctx.measureText(killFeedList[i].shooterName).width;
+      ctx.fillStyle = '#404040' + opacity;
+      ctx.fillText(' killed ', x, y);
+      x += ctx.measureText(' killed ').width;
+      if(killFeedList[i].killedTeam === 'attacker'){
+        ctx.fillStyle = '#ed5f2b' + opacity;
+      } else {
+        ctx.fillStyle = '#3694c7' + opacity;
+      }
+      ctx.fillText(killFeedList[i].killedName, x, y);
+      y += 10;
+    }
+  }
+};
 
 var drawBomb = function () {
   if (bomb !== undefined){
