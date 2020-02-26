@@ -48,6 +48,15 @@ var Entity = function(){
             self.y < rect.y + rect.height &&
             self.y + self.height > rect.y)
   };
+  self.isInsideRect = function(rect){
+    return (rect.x + rect.width > self.x + self.width &&
+            rect.y + rect.height > self.y + self.height &&
+            rect.x < self.x &&
+            rect.y < self.y);
+  };
+  self.isInsidePlantArea = function(){
+    return (self.isInsideRect(areas.plantA) || self.isInsideRect(areas.plantB));
+  };
 
   self.getDistance = function(pt){
     var distance = Math.sqrt(Math.pow(self.x + (self.width/2) - pt.x + (pt.width/2), 2) +
@@ -502,7 +511,7 @@ var Player = function(id){
     if (self.speedX === 0 && self.speedY === 0){
       if (self.team === 'attacker'){
         if (bomb === undefined){
-          if (self.isCollidingWithRect(areas.plantA) || self.isCollidingWithRect(areas.plantB) && !round.isRestarting){
+          if (self.isInsidePlantArea() && !round.isRestarting){
             self.canInteract = true;
           }
         }
@@ -906,14 +915,14 @@ var teams = {
 };
 
 var plantAreaA = {
-  x: 50 + MAPWIDTH / 2 + Math.random() * 250,
+  x: 50 + MAPWIDTH / 2 + Math.random() * 500,
   y: Math.random() * (MAPHEIGHT/2 - 250),
   width: 200 + Math.random() * 50,
   height: 200 + Math.random() * 50,
 };
 
 var plantAreaB = {
-  x: 50 + MAPWIDTH / 2 + Math.random() * 250,
+  x: 50 + MAPWIDTH / 2 + Math.random() * 500,
   y: Math.random() * (MAPHEIGHT/2 - 250) + MAPHEIGHT/2,
   width: 200 + Math.random() * 50,
   height: 200 + Math.random() * 50,
