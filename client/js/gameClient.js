@@ -16,7 +16,8 @@ nameBox.addEventListener("onkeypress", emitNewName);
 var areas = {
   attacker: {},
   defender: {},
-  plant: {},
+  plantA: {},
+  plantB: {},
 };
 
 var attackerScore = 0;
@@ -152,10 +153,15 @@ socket.on('init',function(data){
     areas.defender.width  = data.areas.defender.width;
     areas.defender.height = data.areas.defender.height;
 
-    areas.plant.x         = data.areas.plant.x;
-    areas.plant.y         = data.areas.plant.y;
-    areas.plant.width     = data.areas.plant.width;
-    areas.plant.height    = data.areas.plant.height;
+    areas.plantA.x         = data.areas.plantA.x;
+    areas.plantA.y         = data.areas.plantA.y;
+    areas.plantA.width     = data.areas.plantA.width;
+    areas.plantA.height    = data.areas.plantA.height;
+
+    areas.plantB.x         = data.areas.plantB.x;
+    areas.plantB.y         = data.areas.plantB.y;
+    areas.plantB.width     = data.areas.plantB.width;
+    areas.plantB.height    = data.areas.plantB.height;
   }
   if(data.bomb){
     bomb = data.bomb
@@ -411,9 +417,12 @@ var drawAreas = function () {
                areas.defender.y - Player.list[selfId].y + HEIGHT/2,
                   areas.defender.width, areas.defender.height);
   ctx.fillStyle = '#D8181870';
-  ctx.fillRect( areas.plant.x - Player.list[selfId].x + WIDTH/2,
-                areas.plant.y - Player.list[selfId].y + HEIGHT/2,
-                   areas.plant.width, areas.plant.height);
+  ctx.fillRect( areas.plantA.x - Player.list[selfId].x + WIDTH/2,
+                areas.plantA.y - Player.list[selfId].y + HEIGHT/2,
+                   areas.plantA.width, areas.plantA.height);
+  ctx.fillRect( areas.plantB.x - Player.list[selfId].x + WIDTH/2,
+                areas.plantB.y - Player.list[selfId].y + HEIGHT/2,
+                   areas.plantB.width, areas.plantB.height);
 };
 
 var drawScore = function(){
