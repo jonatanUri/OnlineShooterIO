@@ -321,7 +321,13 @@ var drawKillFeed = function () {
       killFeedList.splice(i, 1);
     } else {
       var x = 400;
-      var opacity = killFeedList[i].opacity.toString(16);
+      var opacity;
+      if (killFeedList[i].opacity > 255){
+        opacity = 'FF';
+      } else {
+        opacity = killFeedList[i].opacity.toString(16);
+      }
+
       if (opacity.length < 2){
         opacity = 0 + opacity;
       }

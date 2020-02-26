@@ -1084,7 +1084,7 @@ var sendKillFeed = function (shooter, killed) {
     shooterTeam:  shooter.team,
     killedName:   killed.name,
     killedTeam:   killed.team,
-    opacity:      255
+    opacity:      300
   };
   for (var id in SOCKET_LIST){
     var socket = SOCKET_LIST[id];
