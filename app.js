@@ -10,6 +10,7 @@ app.get('/', function(req, res){
 });
 app.use('/client', express.static(__dirname + '/client'));
 app.use('/client', express.static(__dirname + '/client/js'));
+app.use('/client', express.static(__dirname + '/client/audio'));
 serv.listen(2000);
 
 (async () => {
@@ -19,7 +20,7 @@ serv.listen(2000);
 
 var SOCKET_LIST = {};
 
-var initPack = {player:[], bullet:[], wall:[]};
+var initPack = {player:[], bullet:[], wall:[], bomb: undefined};
 var removePack = {player:[], bullet:[], wall:[]};
 var MAPWIDTH = 2000;
 var MAPHEIGHT = 1000;
@@ -119,7 +120,7 @@ var VerticalWall = function (startPoint, length) {
 
 var House = function () {
   var minDistanceXBorder = 250;
-  var minDistanceYBorder = 30;
+  var minDistanceYBorder = 40;
   var self = {
     id:                   Math.random(),
     widthMin:             200,
@@ -131,7 +132,7 @@ var House = function () {
     x:                    0,
     y:                    0,
     doorSize:             80,
-    minDistance:          25,
+    minDistance:          35,
     isTooCloseToRect: function(rect){
       return (self.x - self.minDistance < rect.x + rect.width &&
           self.x + self.width + self.minDistance > rect.x &&
@@ -154,11 +155,11 @@ var House = function () {
   do {
     self.width = self.widthMin + Math.random() * self.widthVariation;
     self.height = self.heightMin + Math.random() * self.heightVariation;
-    self.x = minDistanceXBorder + Math.random() * (MAPWIDTH - minDistanceXBorder - self.width - self.minDistance);
-    self.y = self.minDistance + Math.random() * (MAPHEIGHT - minDistanceYBorder - self.height - self.minDistance);
+    self.x = minDistanceXBorder + Math.random() * (MAPWIDTH - minDistanceXBorder * 2 - self.width);
+    self.y = minDistanceYBorder + Math.random() * (MAPHEIGHT - minDistanceYBorder * 2 - self.height);
   } while (self.isTooCloseToAnyHouse());
 
-  var numberOfDoors = Math.ceil(Math.random() * 2);
+  var numberOfDoors =  1 + Math.ceil(Math.random() * 3);
   var doorPos = {
     leftWall: false,
     topWall: false,
@@ -366,6 +367,73 @@ var createNewMap = function () {
 
 createNewMap();
 
+var Bomb = function () {
+  var self = Entity();
+
+  self.width = 10;
+  self.height = 10;
+  self.defused = false;
+  self.timer = 0;
+  self.timeToExplode = 1000 / 40 * 40;
+
+  self.explode = function() {
+    for (var i = 0; i < 50; i++){
+      var bullet = Bullet('bomb', Math.random()*360);
+      bullet.x = self.x;
+      bullet.y = self.y;
+      bullet.width -= 2;
+      bullet.height -= 2;
+      bullet.damage = 40;
+    }
+    bomb = undefined;
+    teams.attacker.score++;
+    round.isFinished = true;
+  };
+
+  self.update = function () {
+    if (!self.defused && self.timer++ >= self.timeToExplode){
+      self.explode();
+    }
+  };
+
+  self.getInitPack = function (){
+    return{
+      x: self.x,
+      y: self.y,
+      width: self.width,
+      height: self.height,
+      defused: self.defused,
+      timer: self.timer,
+      timeToExplode: self.timeToExplode,
+    }
+  };
+
+  self.getUpdatePack = function (){
+    return{
+      x: self.x,
+      y: self.y,
+      width: self.width,
+      height: self.height,
+      defused: self.defused,
+      timer: self.timer,
+      timeToExplode: self.timeToExplode,
+    }
+  };
+
+  initPack.bomb = (self.getInitPack());
+  return self;
+};
+
+var bomb = undefined;
+
+Bomb.update = function () {
+  bomb.update();
+  if(bomb !== undefined){
+    return bomb.getUpdatePack();
+  }
+  return undefined
+};
+
 var Player = function(id){
   var self = Entity();
 
@@ -375,6 +443,7 @@ var Player = function(id){
   self.height =         20;
   self.hp =             100;
   self.hpMax =          100;
+  self.isDead =         true;
   self.score =          0;
   self.killCount =      0;
   self.deathCount =     0;
@@ -384,6 +453,7 @@ var Player = function(id){
   self.pressingDown =   false;
   self.pressingShift =  false;
   self.pressingAttack = false;
+  self.recoil =         8;
   self.mouseAngle =     0;
   self.speedX =         0;
   self.speedY =         0;
@@ -395,23 +465,74 @@ var Player = function(id){
   self.acceleration =   0.2;
   self.attackTimer =    0;
   self.attackRate =     1000 / 100;
+  self.team =           '';
+  self.pressingInteract = false;
+  self.canInteract =    false;
+  self.isInteracting =  false;
+  self.interactTimer =  0;
+  self.timeToInteract = 1000 / 40 * 8;
 
   var super_update = self.update;
   self.update = function () {
     self.updateSpeed();
     super_update();
-    self.handleWallCollision();
+    if(!self.isDead){
+      self.handleWallCollision();
+      self.updateCanInteract();
+      self.updateInteracting();
 
-    self.attackTimer++;
-    if (self.pressingAttack && self.attackTimer >= self.attackRate){
-      /*  ---- "SHOTGUN" ----
-      for (var i = -3; i < 3; i++){
-        self.shootBullet(i*10 + self.mouseAngle)
+      self.attackTimer++;
+      if (self.pressingAttack && self.attackTimer >= self.attackRate){
+        /*  ---- "SHOTGUN" ----
+        for (var i = -3; i < 3; i++){
+          self.shootBullet(i*10 + self.mouseAngle)
+        }
+        */
+        self.shootBullet(self.mouseAngle + Math.random() * self.recoil - self.recoil/2);
+        self.attackTimer = 0;
       }
-      */
-      self.shootBullet(self.mouseAngle);
-      self.attackTimer = 0;
     }
+  };
+
+  self.updateCanInteract = function(){
+    self.canInteract = false;
+    if (self.speedX === 0 && self.speedY === 0){
+      if (self.team === 'attacker'){
+        if (bomb === undefined){
+          if (self.isCollidingWithRect(areas.plantA) || self.isCollidingWithRect(areas.plantB) && !round.isRestarting){
+            self.canInteract = true;
+          }
+        }
+      }else {
+        if (bomb && !bomb.defused){
+          if (self.getDistance(bomb) < 40){
+            self.canInteract = true;
+          }
+        }
+      }
+    }
+  };
+
+  self.updateInteracting = function(){
+    if(self.pressingInteract && self.canInteract){
+        if (self.interactTimer++ > self.timeToInteract){
+          self.interact();
+        }
+    } else {
+      self.interactTimer = 0;
+    }
+  };
+
+  self.interact = function() {
+    if (self.team === 'attacker'){
+      bomb = new Bomb();
+      bomb.x = self.x + self.width/2 - bomb.width/2;
+      bomb.y = self.y + self.height/2 - bomb.height/2;
+    } else {
+      bomb.defused = true;
+      teams.defender.score++;
+    }
+    self.score += 2;
   };
 
   self.shootBullet = function(angle){
@@ -430,6 +551,10 @@ var Player = function(id){
   };
 
   self.updateSpeed = function(){
+    if (self.isDead){
+      self.stamina++;
+    }
+
     if(self.pressingShift && self.stamina > 0){
       self.stamina--;
       self.maxSpeed = self.sprintMaxSpeed;
@@ -447,10 +572,9 @@ var Player = function(id){
         self.speedY += self.acceleration;
       }
     }
-
     if(!self.pressingDown && !self.pressingRight &&
-       !self.pressingLeft && !self.pressingUp &&
-       self.stamina < self.maxStamina){
+        !self.pressingLeft && !self.pressingUp &&
+        self.stamina < self.maxStamina){
       self.stamina++;
     }
 
@@ -518,6 +642,23 @@ var Player = function(id){
     }
   };
 
+  self.reSpawn = function () {
+    self.speedX = 0;
+    self.speedY = 0;
+    self.hp = self.hpMax;
+    self.isDead = false;
+    self.stamina = self.maxStamina;
+    do{
+      if(self.team === 'attacker'){
+        self.x = Math.random() * areas.attacker.width + areas.attacker.x;
+        self.y = Math.random() * areas.attacker.height + areas.attacker.y
+      } else {
+        self.x = Math.random() * areas.defender.width + areas.defender.x;
+        self.y = Math.random() * areas.defender.height + areas.defender.y
+      }
+    }while (self.isCollidingWithAnyWalls());
+  };
+
   var distanceCounter = 1;
   var DIRECTION = ["UP", "RIGHT", "DOWN", "LEFT"];
   DIRECTION.counter = 0;
@@ -571,38 +712,46 @@ var Player = function(id){
     }
   };
 
-
   self.getInitPack = function(){
     return {
-      id:         self.id,
-      name:       self.name,
-      x:          self.x,
-      y:          self.y,
-      width:      self.width,
-      height:     self.height,
-      hp:         self.hp,
-      hpMax:      self.hpMax,
-      stamina:    self.stamina,
-      maxStamina: self.maxStamina,
-      score:      self.score,
-      killCount:  self.killCount,
-      deathCount: self.deathCount
+      id:          self.id,
+      name:        self.name,
+      x:           self.x,
+      y:           self.y,
+      width:       self.width,
+      height:      self.height,
+      hp:          self.hp,
+      hpMax:       self.hpMax,
+      isDead:      self.isDead,
+      stamina:     self.stamina,
+      maxStamina:  self.maxStamina,
+      score:       self.score,
+      killCount:   self.killCount,
+      deathCount:  self.deathCount,
+      team:        self.team,
+      canInteract: self.canInteract,
+      interactTimer: self.interactTimer,
+      timeToInteract: self.timeToInteract
     }
   };
   self.getUpdatePack = function(){
     return {
-      id:         self.id,
-      name:       self.name,
-      x:          self.x,
-      y:          self.y,
-      width:      self.width,
-      height:     self.height,
-      hp:         self.hp,
-      hpMax:      self.hpMax,
-      stamina:    self.stamina,
-      score:      self.score,
-      killCount:  self.killCount,
-      deathCount: self.deathCount
+      id:          self.id,
+      name:        self.name,
+      x:           self.x,
+      y:           self.y,
+      width:       self.width,
+      height:      self.height,
+      hp:          self.hp,
+      hpMax:       self.hpMax,
+      isDead:      self.isDead,
+      stamina:     self.stamina,
+      score:       self.score,
+      killCount:   self.killCount,
+      deathCount:  self.deathCount,
+      team:        self.team,
+      canInteract: self.canInteract,
+      interactTimer: self.interactTimer
     }
   };
 
@@ -615,22 +764,40 @@ Player.list = {};
 
 Player.onConnect = function(socket) {
   var player = Player(socket.id);
+  if(teams.attacker.players.length > teams.defender.players.length){
+    player.team = 'defender';
+    teams.defender.players.push(player);
+  }else {
+    player.team = 'attacker';
+    teams.attacker.players.push(player);
+  }
 
   socket.on('keyPress', function(data){
-    if(data.inputId === 'left'){
-      player.pressingLeft = data.state;
-    }else if(data.inputId === 'right'){
-      player.pressingRight = data.state;
-    }else if(data.inputId === 'up'){
-      player.pressingUp = data.state;
-    }else if(data.inputId === 'down'){
-      player.pressingDown = data.state;
-    }else if(data.inputId === 'shift'){
-      player.pressingShift = data.state;
-    }else if(data.inputId === 'attack'){
-      player.pressingAttack = data.state;
-    }else if(data.inputId === 'mouseAngle'){
-      player.mouseAngle = data.state;
+    switch (data.inputId) {
+      case 'left':
+        player.pressingLeft = data.state;
+        break;
+      case 'right':
+        player.pressingRight = data.state;
+        break;
+      case 'up':
+        player.pressingUp = data.state;
+        break;
+      case 'down':
+        player.pressingDown = data.state;
+        break;
+      case 'shift':
+        player.pressingShift = data.state;
+        break;
+      case 'attack':
+        player.pressingAttack = data.state;
+        break;
+      case 'mouseAngle':
+        player.mouseAngle = data.state;
+        break;
+      case 'interact':
+        player.pressingInteract = data.state;
+        break;
     }
   });
 
@@ -643,6 +810,7 @@ Player.onConnect = function(socket) {
     player: Player.getAllInitpack(),
     bullet: Bullet.getAllInitpack(),
     wall:   Wall.getAllInitpack(),
+    areas:  areas
   })
 
 };
@@ -656,6 +824,8 @@ Player.getAllInitpack = function(){
 };
 
 Player.onDisconnect = function(socket){
+  var player = Player.list[socket.id];
+  teams.removePlayer(player);
   delete Player.list[socket.id];
   removePack.player.push(socket.id);
 };
@@ -668,6 +838,128 @@ Player.update = function() {
     packet.push(player.getUpdatePack());
   }
   return packet;
+};
+
+var teams = {
+  attacker: {
+    score: 0,
+    players: [],
+    spawnArea: {
+      x: 0,
+      y: 0,
+      width: 150,
+      height: MAPHEIGHT
+    }
+  },
+  defender: {
+    score: 0,
+    players: [],
+    spawnArea: {
+      x: MAPWIDTH - 150,
+      y: 0,
+      width: 150,
+      height: MAPHEIGHT
+    }
+  },
+  autoBalance: function () {
+    if(teams.attacker.players.length > teams.defender.players.length + 1){
+      teams.attacker.players[teams.attacker.players.length - 1].team = 'defender';
+      teams.defender.players.push(teams.attacker.players.pop());
+    }
+    if(teams.attacker.players.length + 1 < teams.defender.players.length ){
+      teams.defender.players[teams.defender.players.length - 1].team = 'attacker';
+      teams.attacker.players.push(teams.defender.players.pop());
+    }
+  },
+  removePlayer: function (player) {
+    if (player.team === 'attacker'){
+      teams.attacker.players.splice(teams.attacker.players.indexOf(player), 1);
+    } else {
+      teams.defender.players.splice(teams.defender.players.indexOf(player), 1);
+    }
+  },
+  isAllAttackersDead: function () {
+    if (teams.attacker.players.length > 0){
+      for(var i = 0; i < teams.attacker.players.length; i++){
+        if (!teams.attacker.players[i].isDead){
+          return false;
+        }
+      }
+      return true;
+    }
+    return false;
+  },
+  isAllDefendersDead: function () {
+    if (teams.defender.players.length > 0){
+      for(var i = 0; i < teams.defender.players.length; i++){
+        if (!teams.defender.players[i].isDead){
+          return false;
+        }
+      }
+      return true;
+    }
+    return false;
+  }
+};
+
+var plantAreaA = {
+  x: 50 + MAPWIDTH / 2 + Math.random() * 250,
+  y: Math.random() * (MAPHEIGHT/2 - 250),
+  width: 200 + Math.random() * 50,
+  height: 200 + Math.random() * 50,
+};
+
+var plantAreaB = {
+  x: 50 + MAPWIDTH / 2 + Math.random() * 250,
+  y: Math.random() * (MAPHEIGHT/2 - 250) + MAPHEIGHT/2,
+  width: 200 + Math.random() * 50,
+  height: 200 + Math.random() * 50,
+};
+
+var areas = {
+  attacker: teams.attacker.spawnArea,
+  defender: teams.defender.spawnArea,
+  plantA: plantAreaA,
+  plantB: plantAreaB
+};
+
+var round = {
+  maxTime: 120,
+  timer: 120,
+  counter: 0,
+  isFinished: false,
+  isRestarting: false,
+
+  update: function () {
+    if(!round.isFinished && teams.attacker.players.length > 0){
+      if(bomb !== undefined && bomb.defused){
+        round.isFinished = true;
+      }
+      if (round.timer <= 0){
+        teams.defender.score++;
+        round.isFinished = true;
+      }
+      if(bomb === undefined && teams.isAllAttackersDead()){
+        teams.defender.score++;
+        round.isFinished = true;
+      }
+      if(teams.isAllDefendersDead()){
+        teams.attacker.score++;
+        round.isFinished = true;
+      }
+    }
+  },
+  startNewRound: function () {
+    bomb = undefined;
+    round.isFinished = false;
+    round.isRestarting = false;
+    round.timer = round.maxTime;
+
+    teams.autoBalance();
+    for (var i in Player.list){
+      Player.list[i].reSpawn();
+    }
+  }
 };
 
 var Bullet = function(parent, angle){
@@ -684,6 +976,8 @@ var Bullet = function(parent, angle){
   self.timer =    0;
   self.maxTime =  200;
   self.toRemove = false;
+
+  self.friendlyFire = false;
 
   var super_update = self.update;
   self.update = function(){
@@ -705,27 +999,36 @@ var Bullet = function(parent, angle){
 
     for (var i in Player.list) {
       var player = Player.list[i];
-      if(self.isCollidingWithRect(player) && self.parent !== player.id){
-        player.hp -= self.damage;
-        if (player.hp<0){
+      if (!player.isDead){
+        if(self.isCollidingWithRect(player)){
           var shooter = Player.list[self.parent];
-          if (shooter){
-            shooter.score++;
-            shooter.killCount++;
+          var isOpponent = false;
+          if (shooter === player){
+            isOpponent = false;
+          }else if(self.friendlyFire || self.parent === 'bomb'){
+            isOpponent = true;
+          }else if(shooter.team !== player.team){
+            isOpponent = true;
           }
-          player.deathCount++;
-          player.hp = player.hpMax;
-          player.stamina = player.maxStamina;
-          do{
-            player.x = Math.random() * MAPWIDTH;
-            player.y = Math.random() * MAPHEIGHT;
-          }while (player.isCollidingWithAnyWalls());
+          if (isOpponent){
+            player.hp -= self.damage;
+            if (player.hp<0){
+              if (shooter){
+                shooter.score++;
+                shooter.killCount++;
+              }
+              player.isDead = true;
+              player.deathCount++;
+
+              sendKillFeed(shooter, player);
+            }
+            self.toRemove = true;
+          }
         }
-        self.toRemove = true;
       }
     }
-
   };
+
   self.getInitPack = function() {
     return {
       id:     self.id,
@@ -775,6 +1078,20 @@ Bullet.getAllInitpack = function(){
   return bullets;
 };
 
+var sendKillFeed = function (shooter, killed) {
+  var killFeedData = {
+    shooterName:  shooter.name,
+    shooterTeam:  shooter.team,
+    killedName:   killed.name,
+    killedTeam:   killed.team,
+    opacity:      300
+  };
+  for (var id in SOCKET_LIST){
+    var socket = SOCKET_LIST[id];
+    socket.emit('killFeed', killFeedData);
+  }
+};
+
 var io = require('socket.io')(serv,{});
 io.sockets.on('connection', function(socket){
   socket.id = Math.random();
@@ -796,6 +1113,20 @@ setInterval(function(){
     player: Player.update(),
     bullet: Bullet.update(),
   };
+  if (bomb !== undefined){
+    updatePack.bomb = Bomb.update();
+  }
+
+  if(!round.isRestarting){
+    round.update();
+    if(round.isFinished){
+      round.isRestarting = true;
+      setTimeout(round.startNewRound, 8000) ;
+    }
+  }
+
+  updatePack.attackerScore = teams.attacker.score;
+  updatePack.defenderScore = teams.defender.score;
 
   for (var id in SOCKET_LIST){
     var socket = SOCKET_LIST[id];
@@ -807,8 +1138,20 @@ setInterval(function(){
   initPack.player = [];
   initPack.bullet = [];
   initPack.wall = [];
+  initPack.bomb = undefined;
+
   removePack.player = [];
   removePack.bullet = [];
   removePack.wall = [];
 
 }, 1000/40);
+
+setInterval(function () {
+  if(round.timer > 0 && bomb === undefined){
+    round.timer--;
+  }
+  for (var id in SOCKET_LIST){
+    var socket = SOCKET_LIST[id];
+    socket.emit('roundTime', round.timer);
+  }
+}, 1000);

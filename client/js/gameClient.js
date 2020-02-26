@@ -1,4 +1,4 @@
-var socket = io();
+var socket = io({transports: ['websocket']});
 var display = document.getElementById("display");
 var WIDTH = display.width;
 var HEIGHT = display.height;
@@ -13,6 +13,18 @@ var nameBox = document.getElementById("nameBox");
 nameBox.addEventListener("change", emitNewName);
 nameBox.addEventListener("onkeypress", emitNewName);
 
+var areas = {
+  attacker: {},
+  defender: {},
+  plantA: {},
+  plantB: {},
+};
+
+var attackerScore = 0;
+var defenderScore = 0;
+
+var bomb = undefined;
+
 var Player = function(initPack){
   var self = {};
   self.id =         initPack.id;
@@ -23,36 +35,45 @@ var Player = function(initPack){
   self.height =     initPack.height;
   self.hp =         initPack.hp;
   self.hpMax =      initPack.hpMax;
+  self.isDead =     initPack.isDead;
   self.stamina =    initPack.stamina;
   self.maxStamina = initPack.maxStamina;
   self.score =      initPack.score;
   self.killCount =  initPack.killCount;
   self.deathCount = initPack.deathCount;
+  self.team =       initPack.team;
+  self.canInteract = initPack.canInteract;
   self.pressingTab = false;
+  self.interactTimer = initPack.interactTimer;
+  self.timeToInteract = initPack.timeToInteract;
 
   self.draw = function(){
-    var x = self.x - Player.list[selfId].x + WIDTH/2;
-    var y = self.y - Player.list[selfId].y + HEIGHT/2;
+    if(!self.isDead){
+      var x = self.x - Player.list[selfId].x + WIDTH/2;
+      var y = self.y - Player.list[selfId].y + HEIGHT/2;
 
+      var barWidth = 30;
 
+      var hpWidth = barWidth * self.hp / self.hpMax;
+      ctx.fillStyle = '#222222A0';
+      ctx.fillRect(x - barWidth/2 + self.width/2, y - 10, barWidth, 4);
 
-    var barWidth = 30;
+      if (self.team !== Player.list[selfId].team){
+        ctx.fillStyle = '#FF3622C0';
+      } else {
+        ctx.fillStyle = '#23C216C0'
+      }
+      ctx.fillRect(x - barWidth/2 + self.width/2, y - 10, hpWidth, 4);
+      ctx.fillStyle = '#000000';
+      ctx.fillText(self.name, x - ctx.measureText(self.name).width/2 + self.width/2, y - 15);
 
-    var hpWidth = barWidth * self.hp / self.hpMax;
-    ctx.fillStyle = '#222222A0';
-    ctx.fillRect(x - barWidth/2 + self.width/2, y - 10, barWidth, 4);
-
-    if (self.id !== selfId){
-      ctx.fillStyle = '#FF3622C0';
-    } else {
-      ctx.fillStyle = '#23C216C0'
+      if (self.team === 'attacker'){
+        ctx.fillStyle = '#ed5f2b';
+      } else {
+        ctx.fillStyle = '#3694c7';
+      }
+      ctx.fillRect(x, y, self.width, self.height);
     }
-    ctx.fillRect(x - barWidth/2 + self.width/2, y - 10, hpWidth, 4);
-    ctx.fillStyle = '#000000';
-    ctx.fillText(self.name, x - ctx.measureText(self.name).width/2 + self.width/2, y - 15);
-
-    ctx.fillStyle = '#808080';
-    ctx.fillRect(x, y, self.width, self.height);
   };
 
   Player.list[self.id] = self;
@@ -121,6 +142,30 @@ socket.on('init',function(data){
       new Bullet(data.bullet[i]);
     }
   }
+  if(data.areas){
+    areas.attacker.x      = data.areas.attacker.x;
+    areas.attacker.y      = data.areas.attacker.y;
+    areas.attacker.width  = data.areas.attacker.width;
+    areas.attacker.height = data.areas.attacker.height;
+
+    areas.defender.x      = data.areas.defender.x;
+    areas.defender.y      = data.areas.defender.y;
+    areas.defender.width  = data.areas.defender.width;
+    areas.defender.height = data.areas.defender.height;
+
+    areas.plantA.x         = data.areas.plantA.x;
+    areas.plantA.y         = data.areas.plantA.y;
+    areas.plantA.width     = data.areas.plantA.width;
+    areas.plantA.height    = data.areas.plantA.height;
+
+    areas.plantB.x         = data.areas.plantB.x;
+    areas.plantB.y         = data.areas.plantB.y;
+    areas.plantB.width     = data.areas.plantB.width;
+    areas.plantB.height    = data.areas.plantB.height;
+  }
+  if(data.bomb){
+    bomb = data.bomb
+  }
 });
 
 socket.on("update", function(data){
@@ -164,6 +209,18 @@ socket.on("update", function(data){
       if(packet.deathCount !== undefined){
         player.deathCount = packet.deathCount;
       }
+      if(packet.team !== undefined){
+        player.team = packet.team;
+      }
+      if(packet.canInteract !== undefined){
+        player.canInteract = packet.canInteract;
+      }
+      if(packet.interactTimer !== undefined){
+        player.interactTimer = packet.interactTimer;
+      }
+      if(packet.isDead !== undefined){
+        player.isDead = packet.isDead;
+      }
     }
   }
   for (var i = 0; i < data.bullet.length; i++) {
@@ -184,6 +241,15 @@ socket.on("update", function(data){
       }
     }
   }
+
+  bomb = data.bomb;
+
+  if (data.attackerScore !== undefined){
+    attackerScore = data.attackerScore;
+  }
+  if (data.defenderScore !== undefined){
+    defenderScore = data.defenderScore;
+  }
 });
 
 socket.on('remove', function(data) {
@@ -198,10 +264,19 @@ socket.on('remove', function(data) {
   }
 });
 
+var roundTime = 0;
+
+socket.on('roundTime', function (data) {
+  if (data){
+    roundTime = data;
+  }
+});
+
 setInterval(function(){
   if(!selfId)
     return;
   ctx.clearRect(0, 0, WIDTH, HEIGHT);
+  drawAreas();
   drawScore();
   drawPosition();
 
@@ -215,10 +290,146 @@ setInterval(function(){
     Bullet.list[i].draw();
   }
 
-  drawHp();
-  drawStamina();
+  drawTeamScore();
+  drawAlivePlayerCount();
+  drawRoundTime();
+  drawKillFeed();
+  drawBomb();
+  if (!Player.list[selfId].isDead){
+    drawInteract();
+    drawHp();
+    drawStamina();
+  }
+
+  if(Player.list[selfId].isDead){
+    ctx.fillStyle = '#00000030';
+    ctx.fillRect(0,0, WIDTH, HEIGHT);
+  }
 
 }, 1000/45);
+
+var killFeedList = [];
+
+socket.on('killFeed', function (data) {
+  killFeedList.push(data);
+});
+
+var drawKillFeed = function () {
+  var y = 20;
+  for (var i = 0; i < killFeedList.length; i++){
+    if (killFeedList[i].opacity-- === 0){
+      killFeedList.splice(i, 1);
+    } else {
+      var x = 400;
+      var opacity;
+      if (killFeedList[i].opacity > 255){
+        opacity = 'FF';
+      } else {
+        opacity = killFeedList[i].opacity.toString(16);
+      }
+
+      if (opacity.length < 2){
+        opacity = 0 + opacity;
+      }
+      if(killFeedList[i].shooterTeam === 'attacker'){
+        ctx.fillStyle = '#ed5f2b' + opacity;
+      } else {
+        ctx.fillStyle = '#3694c7' + opacity;
+      }
+      ctx.fillText(killFeedList[i].shooterName, x, y);
+      x += ctx.measureText(killFeedList[i].shooterName).width;
+      ctx.fillStyle = '#404040' + opacity;
+      ctx.fillText(' killed ', x, y);
+      x += ctx.measureText(' killed ').width;
+      if(killFeedList[i].killedTeam === 'attacker'){
+        ctx.fillStyle = '#ed5f2b' + opacity;
+      } else {
+        ctx.fillStyle = '#3694c7' + opacity;
+      }
+      ctx.fillText(killFeedList[i].killedName, x, y);
+      y += 10;
+    }
+  }
+};
+
+var drawBomb = function () {
+  if (bomb !== undefined){
+    var x = bomb.x - Player.list[selfId].x + WIDTH/2;
+    var y = bomb.y - Player.list[selfId].y + HEIGHT/2;
+    if(!bomb.defused){
+      ctx.fillStyle = "#000000";
+      ctx.fillRect(x, y, bomb.width, bomb.height);
+      ctx.fillStyle = bombColor;
+    }
+    else {
+      ctx.fillStyle = '#26BB37'
+    }
+    ctx.fillRect(x, y, bomb.width, bomb.height);
+  }
+};
+
+var bombColor = "#FF0000";
+var bombColorCounter = 255;
+var bombSound = new Audio('../client/audio/bombSound.mp3');
+setInterval(function () {
+  if (bomb !== undefined && !bomb.defused){
+    var counterMinus = Math.floor(bomb.timer / bomb.timeToExplode * 25);
+    bombColorCounter -= counterMinus;
+    if (bombColorCounter <= 0){
+      bombColorCounter = 255;
+      bombSound.currentTime = 0;
+      bombSound.play();
+    }
+    var bombColorCounterHexa = bombColorCounter;
+    bombColor = "#FF0000" + Math.floor(bombColorCounterHexa).toString(16);
+  }
+}, 1000/45);
+
+var interactBarWidth = 40;
+var interactBarHeight = 5;
+
+var drawInteract = function () {
+  if(Player.list[selfId].canInteract){
+    var interactText = '';
+    var barStyle = '';
+    if(Player.list[selfId].team === 'attacker'){
+      interactText = 'Hold F to plant the bomb';
+      barStyle = '#FF0000';
+    } else {
+      interactText = 'Hold F to defuse';
+      barStyle = '#0000FF';
+    }
+    var textWidth = ctx.measureText(interactText).width;
+    ctx.fillStyle = '#000000';
+    ctx.fillText(interactText, WIDTH/2 - textWidth/2 + Player.list[selfId].width/2, HEIGHT/2 + 30);
+    if(Player.list[selfId].interactTimer > 0){
+      ctx.fillStyle = '#10101030';
+      ctx.fillRect(WIDTH/2 - interactBarWidth/2 + Player.list[selfId].width/2, HEIGHT/2 + 40, interactBarWidth, interactBarHeight);
+      var interactWidth = interactBarWidth * (Player.list[selfId].interactTimer / Player.list[selfId].timeToInteract);
+      ctx.fillStyle = barStyle;
+      ctx.fillRect(WIDTH/2 - interactBarWidth/2 + Player.list[selfId].width/2, HEIGHT/2 + 40, interactWidth, interactBarHeight);
+
+    }
+  }
+};
+
+var drawAreas = function () {
+  ctx.fillStyle = '#ed5f2b30';
+  ctx.fillRect(areas.attacker.x - Player.list[selfId].x + WIDTH/2,
+               areas.attacker.y - Player.list[selfId].y + HEIGHT/2,
+                  areas.attacker.width, areas.attacker.height);
+  ctx.fillStyle = '#3694c730';
+  ctx.fillRect(areas.defender.x - Player.list[selfId].x + WIDTH/2,
+               areas.defender.y - Player.list[selfId].y + HEIGHT/2,
+                  areas.defender.width, areas.defender.height);
+  ctx.fillStyle = '#D8181870';
+  ctx.fillRect( areas.plantA.x - Player.list[selfId].x + WIDTH/2,
+                areas.plantA.y - Player.list[selfId].y + HEIGHT/2,
+                   areas.plantA.width, areas.plantA.height);
+  ctx.fillRect( areas.plantB.x - Player.list[selfId].x + WIDTH/2,
+                areas.plantB.y - Player.list[selfId].y + HEIGHT/2,
+                   areas.plantB.width, areas.plantB.height);
+};
 
 var drawScore = function(){
   ctx.fillStyle = '#404040';
@@ -227,24 +438,98 @@ var drawScore = function(){
   ctx.fillText('Deaths: ' + Player.list[selfId].deathCount, 3, 30);
 };
 
+var drawTeamScore = function () {
+  ctx.font = "20px Arial";
+  var x = WIDTH/2 - ctx.measureText(attackerScore.toString() + ' : ' + defenderScore.toString()).width/2;
+  ctx.fillStyle = '#ed5f2b';
+  ctx.fillText(attackerScore.toString(), x, 20);
+  x += ctx.measureText(attackerScore.toString()).width;
+  ctx.fillStyle = '#000000';
+  ctx.fillText(' : ', x, 20);
+  x += ctx.measureText(' : ').width;
+  ctx.fillStyle = '#3694c7';
+  ctx.fillText(defenderScore.toString(), x, 20);
+
+  ctx.font = "10px Arial";
+};
+
+var drawAlivePlayerCount = function () {
+  var attackerAllCount = 0;
+  var defenderAllCount = 0;
+  var attackerAliveCount = 0;
+  var defenderAliveCount = 0;
+  for (var i in Player.list){
+    if (Player.list[i].team === 'attacker'){
+      attackerAllCount++;
+      if (!Player.list[i].isDead){
+        attackerAliveCount++;
+      }
+    } else {
+      defenderAllCount++;
+      if (!Player.list[i].isDead){
+        defenderAliveCount++;
+      }
+    }
+  }
+
+  ctx.font = "12px Arial";
+  var x = WIDTH/2 - ctx.measureText(attackerAllCount + '/' + attackerAliveCount + '   ' +
+                                          defenderAllCount + '/' + defenderAliveCount).width/2;
+  ctx.fillStyle = '#ed5f2b';
+  ctx.fillText(attackerAllCount + '/' + attackerAliveCount + '   ', x, 32);
+  x += ctx.measureText(attackerAllCount + '/' + attackerAliveCount + '   ').width;
+  ctx.fillStyle = '#3694c7';
+  ctx.fillText(defenderAllCount + '/' + defenderAliveCount, x, 32);
+
+  ctx.font = "10px Arial";
+};
+
+var drawRoundTime = function () {
+  if (bomb === undefined){
+    var minutes = Math.floor(roundTime / 60);
+    var seconds = roundTime - minutes * 60;
+    if(seconds < 10){
+      seconds = '0'+seconds;
+    }
+    var timeString = minutes + ':' + seconds;
+    var x = WIDTH/2 - ctx.measureText(timeString).width/2;
+    ctx.fillStyle = '#555555';
+    ctx.fillText(timeString, x, 45);
+  }else {
+    var x = WIDTH/2 - bomb.width/2;
+    var y = 40;
+    if(!bomb.defused){
+      ctx.fillStyle = "#000000";
+      ctx.fillRect(x, y, bomb.width, bomb.height);
+      ctx.fillStyle = bombColor;
+    }
+    else {
+      ctx.fillStyle = '#26BB37'
+    }
+    ctx.fillRect(x, y, bomb.width, bomb.height);
+
+  }
+
+};
+
 var hpBarWidth = 150;
 var hpBarHeight = 15;
 var drawHp = function () {
   ctx.fillStyle = '#CFFFCCA0';
-  ctx.fillRect(WIDTH/2 - hpBarWidth/2, HEIGHT-25, hpBarWidth, hpBarHeight);
+  ctx.fillRect(WIDTH/2 - hpBarWidth/2 + Player.list[selfId].width/2, HEIGHT-25, hpBarWidth, hpBarHeight);
   var hpWidth = hpBarWidth * (Player.list[selfId].hp / Player.list[selfId].hpMax);
   ctx.fillStyle = '#23C216C0';
-  ctx.fillRect(WIDTH/2 - hpBarWidth/2, HEIGHT-25, hpWidth, hpBarHeight);
+  ctx.fillRect(WIDTH/2 - hpBarWidth/2 + Player.list[selfId].width/2, HEIGHT-25, hpWidth, hpBarHeight);
 };
 
 var staminaBarWidth = 150;
 var staminaBarHeight = 10;
 var drawStamina = function () {
   ctx.fillStyle = '#FDFFC5A0';
-  ctx.fillRect(WIDTH/2 - staminaBarWidth/2, HEIGHT-10, staminaBarWidth, staminaBarHeight);
+  ctx.fillRect(WIDTH/2 - staminaBarWidth/2 + Player.list[selfId].width/2, HEIGHT-10, staminaBarWidth, staminaBarHeight);
   var staminaWidth = staminaBarWidth * (Player.list[selfId].stamina / Player.list[selfId].maxStamina);
   ctx.fillStyle = '#FFE300C0';
-  ctx.fillRect(WIDTH/2 - staminaBarWidth/2, HEIGHT-10, staminaWidth, staminaBarHeight);
+  ctx.fillRect(WIDTH/2 - staminaBarWidth/2 + Player.list[selfId].width/2, HEIGHT-10, staminaWidth, staminaBarHeight);
 };
 
 var drawPosition = function(){
@@ -271,7 +556,11 @@ document.onkeydown = function(event){
     socket.emit('keyPress', {inputId: 'shift', state: true});
   }
   else if(event.keyCode === 9){ //Tab
+    event.preventDefault();
     Player.list[selfId].pressingTab = true;
+  }
+  else if(event.keyCode === 70){ //F
+    socket.emit('keyPress', {inputId: 'interact', state: true});
   }
 };
 document.onkeyup = function(event){
@@ -287,11 +576,15 @@ document.onkeyup = function(event){
   else if(event.keyCode === 87){ //W
     socket.emit('keyPress', {inputId: 'up', state:false});
   }
-  else  if(event.keyCode === 16){
+  else if(event.keyCode === 16){ //Shift
     socket.emit('keyPress', {inputId: 'shift', state: false});
   }
   else if(event.keyCode === 9){ //Tab
+    event.preventDefault();
     Player.list[selfId].pressingTab = false;
+  }
+  else if(event.keyCode === 70){ //F
+    socket.emit('keyPress', {inputId: 'interact', state: false});
   }
 };
 document.onmousedown = function(event){
@@ -301,8 +594,8 @@ document.onmouseup = function(event){
   socket.emit('keyPress', {inputId: 'attack', state: false});
 };
 document.onmousemove = function(event){
-  var x = -WIDTH/2 + event.clientX -8;
-  var y = -HEIGHT/2 + event.clientY -8;
+  var x = -WIDTH/2 + event.clientX - Player.list[selfId].width;
+  var y = -HEIGHT/2 + event.clientY - Player.list[selfId].height;
   var angle = Math.atan2(y,x) / Math.PI * 180;
   socket.emit('keyPress', {inputId: 'mouseAngle', state: angle});
 };
