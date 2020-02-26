@@ -1026,8 +1026,9 @@ var Bullet = function(parent, angle){
               }
               player.isDead = true;
               player.deathCount++;
-
-              sendKillFeed(shooter, player);
+              if (self.parent !== 'bomb'){
+                sendKillFeed(shooter, player);
+              }
             }
             self.toRemove = true;
           }
