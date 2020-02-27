@@ -1,6 +1,6 @@
-var express = require('express');
-var app = express();
-var serv = require('http').Server(app);
+let express = require('express');
+let app = express();
+let serv = require('http').Server(app);
 
 const publicIp = require('public-ip');
 const localIp = require("ip");
@@ -18,15 +18,15 @@ serv.listen(2000);
     console.log("Or: " + localIp.address() + ":2000 (local)")
 })();
 
-var SOCKET_LIST = {};
+let SOCKET_LIST = {};
 
-var initPack = {player:[], bullet:[], wall:[], bomb: undefined};
-var removePack = {player:[], bullet:[], wall:[]};
-var MAPWIDTH = 2000;
-var MAPHEIGHT = 1000;
+let initPack = {player:[], bullet:[], wall:[], bomb: undefined};
+let removePack = {player:[], bullet:[], wall:[]};
+let MAPWIDTH = 2000;
+let MAPHEIGHT = 1000;
 
-var Entity = function(){
-  var self = {
+let Entity = function(){
+  let self = {
     id:     "",
     x:      0,
     y:      0,
@@ -48,9 +48,18 @@ var Entity = function(){
             self.y < rect.y + rect.height &&
             self.y + self.height > rect.y)
   };
+  self.isInsideRect = function(rect){
+    return (rect.x + rect.width > self.x + self.width &&
+            rect.y + rect.height > self.y + self.height &&
+            rect.x < self.x &&
+            rect.y < self.y);
+  };
+  self.isInsidePlantArea = function(){
+    return (self.isInsideRect(areas.plantA) || self.isInsideRect(areas.plantB));
+  };
 
   self.getDistance = function(pt){
-    var distance = Math.sqrt(Math.pow(self.x + (self.width/2) - pt.x + (pt.width/2), 2) +
+    let distance = Math.sqrt(Math.pow(self.x + (self.width/2) - pt.x + (pt.width/2), 2) +
                                 Math.pow(self.y + (self.height/2) - pt.y + (pt.height/2), 2));
     return distance;
   };
@@ -58,8 +67,8 @@ var Entity = function(){
   return self;
 };
 
-var Wall = function (startPoint, width, height) {
-  var self =        Entity();
+let Wall = function (startPoint, width, height) {
+  let self =        Entity();
   self.id =         Math.random();
   self.startPoint = startPoint;
   self.x =          startPoint.x;
@@ -92,8 +101,11 @@ var Wall = function (startPoint, width, height) {
   };
 
   self.endAtPoint = function(point) {
-    self.x = point.x - width;
-    self.y = point.y - height;
+    self.x = point.x - self.width;
+    self.y = point.y - self.height;
+    Wall.list[self.id] = self;
+    initPack.wall.push(self.getInitPack());
+    return self;
   };
 
   Wall.list[self.id] = self;
@@ -103,28 +115,28 @@ var Wall = function (startPoint, width, height) {
 Wall.list = {};
 
 Wall.getAllInitpack = function(){
-  var walls = [];
-  for(var id in Wall.list){
+  let walls = [];
+  for(let id in Wall.list){
     walls.push(Wall.list[id].getInitPack());
   }
   return walls;
 };
 
-var HorizontalWall = function (startPoint, length) {
+let HorizontalWall = function (startPoint, length) {
   return new Wall(startPoint, length, 8);
 };
 
-var VerticalWall = function (startPoint, length) {
+let VerticalWall = function (startPoint, length) {
   return new Wall(startPoint, 8, length);
 };
 
-var House = function () {
-  var minDistanceXBorder = 250;
-  var minDistanceYBorder = 40;
-  var self = {
+let House = function () {
+  let minDistanceXBorder = 250;
+  let minDistanceYBorder = 40;
+  let self = {
     id:                   Math.random(),
     widthMin:             200,
-    heightMin:            150,
+    heightMin:            180,
     widthVariation:       500,
     heightVariation:      400,
     width:                0,
@@ -142,7 +154,7 @@ var House = function () {
   };
 
   self.isTooCloseToAnyHouse = function () {
-    for(var i in House.list){
+    for(let i in House.list){
       if (House.list[i].id !== self.id){
         if(self.isTooCloseToRect(House.list[i])){
           return true;
@@ -159,15 +171,15 @@ var House = function () {
     self.y = minDistanceYBorder + Math.random() * (MAPHEIGHT - minDistanceYBorder * 2 - self.height);
   } while (self.isTooCloseToAnyHouse());
 
-  var numberOfDoors =  1 + Math.ceil(Math.random() * 3);
-  var doorPos = {
+  let numberOfDoors =  1 + Math.ceil(Math.random() * 3);
+  let doorPos = {
     leftWall: false,
     topWall: false,
     rightWall: false,
     bottomWall: false,
   };
 
-  var setDoorPositions = function () {
+  let setDoorPositions = function () {
     while (numberOfDoors !== 0){
       switch (Math.floor(Math.random() * 4)) {
         case 0:
@@ -200,13 +212,13 @@ var House = function () {
 
   setDoorPositions();
 
-  var makeLeftWall = function () {
-    var partWalls = {};
-    var topWallStartPos = {x: self.x, y: self.y};
+  let makeLeftWall = function () {
+    let partWalls = {};
+    let topWallStartPos = {x: self.x-1, y: self.y};
     if(doorPos.leftWall){
-      var topWallLength = Math.random() * (self.height - self.doorSize);
-      var bottomWallLength = self.height - self.doorSize - topWallLength;
-      var bottomWallStartPos = {x: self.x, y: self.y + self.doorSize + topWallLength};
+      let topWallLength = Math.random() * (self.height - self.doorSize);
+      let bottomWallLength = self.height - self.doorSize - topWallLength;
+      let bottomWallStartPos = {x: self.x, y: self.y + self.doorSize + topWallLength};
       partWalls = {
         topWall: new VerticalWall(topWallStartPos, topWallLength),
         bottomWall: new VerticalWall(bottomWallStartPos, bottomWallLength)
@@ -218,13 +230,13 @@ var House = function () {
     }
     return partWalls;
   };
-  var makeTopWall = function () {
-    var partWalls = {};
-    var leftWallStartPos = {x: self.x, y: self.y};
+  let makeTopWall = function () {
+    let partWalls = {};
+    let leftWallStartPos = {x: self.x, y: self.y};
     if(doorPos.topWall){
-      var leftWallLength = Math.random() * (self.width - self.doorSize);
-      var rightWallLength = self.width - self.doorSize - leftWallLength;
-      var rightWallStartPos = {x: self.x + self.doorSize + leftWallLength, y: self.y};
+      let leftWallLength = Math.random() * (self.width - self.doorSize);
+      let rightWallLength = self.width - self.doorSize - leftWallLength;
+      let rightWallStartPos = {x: self.x + self.doorSize + leftWallLength, y: self.y};
       partWalls = {
         leftWall: new HorizontalWall(leftWallStartPos, leftWallLength),
         rightWall: new HorizontalWall(rightWallStartPos, rightWallLength)
@@ -236,13 +248,13 @@ var House = function () {
     }
     return partWalls;
   };
-  var makeRightWall = function () {
-    var partWalls = {};
-    var topWallStartPos = {x: self.x + self.width, y: self.y};
+  let makeRightWall = function () {
+    let partWalls = {};
+    let topWallStartPos = {x: self.x + self.width, y: self.y};
     if(doorPos.rightWall){
-      var topWallLength = Math.random() * (self.height - self.doorSize);
-      var bottomWallLength = self.height - self.doorSize - topWallLength;
-      var bottomWallStartPos = {x: self.x + self.width, y: self.y + self.doorSize + topWallLength};
+      let topWallLength = Math.random() * (self.height - self.doorSize);
+      let bottomWallLength = self.height - self.doorSize - topWallLength;
+      let bottomWallStartPos = {x: self.x + self.width, y: self.y + self.doorSize + topWallLength};
       partWalls = {
         topWall: new VerticalWall(topWallStartPos, topWallLength),
         bottomWall: new VerticalWall(bottomWallStartPos, bottomWallLength + 8) // <---- (+8 for correct cornering, need refactor)
@@ -254,13 +266,13 @@ var House = function () {
     }
     return partWalls;
   };
-  var makeBottomWall = function () {
-    var partWalls = {};
-    var leftWallStartPos = {x: self.x, y: self.y + self.height};
+  let makeBottomWall = function () {
+    let partWalls = {};
+    let leftWallStartPos = {x: self.x, y: self.y + self.height};
     if(doorPos.bottomWall){
-      var leftWallLength = Math.random() * (self.width - self.doorSize);
-      var rightWallLength = self.width - self.doorSize - leftWallLength;
-      var rightWallStartPos = {x: self.x + self.doorSize + leftWallLength, y: self.y + self.height};
+      let leftWallLength = Math.random() * (self.width - self.doorSize);
+      let rightWallLength = self.width - self.doorSize - leftWallLength;
+      let rightWallStartPos = {x: self.x + self.doorSize + leftWallLength, y: self.y + self.height};
       partWalls = {
         leftWall: new HorizontalWall(leftWallStartPos, leftWallLength),
         rightWall: new HorizontalWall(rightWallStartPos, rightWallLength)
@@ -273,14 +285,15 @@ var House = function () {
     return partWalls;
   };
 
-  var rightWall = makeRightWall();
-  var topWall = makeTopWall();
-  var leftWall = makeLeftWall();
-  var bottomWall = makeBottomWall();
+  let rightWall = makeRightWall();
+  let topWall = makeTopWall();
+  let leftWall = makeLeftWall();
+  let bottomWall = makeBottomWall();
 
-  var interiorWalls = [];
-  var makeInteriorWalls = function() {
-    var wallToExtend;
+  let interiorWalls = [];
+  let makeInteriorWalls = function() {
+    let wallToExtend;
+    let wall;
     switch (Math.floor(Math.random() * 4)) {
       case 0:
         if(rightWall.wall){
@@ -292,8 +305,8 @@ var House = function () {
             wallToExtend = rightWall.bottomWall;
           }
         }
-        var wall = new HorizontalWall({x:0, y: 0}, 20 + Math.random() * (self.width * 0.7 - 20));
-        wall.endAtPoint(wallToExtend.getCenterPoint());
+        wall = new HorizontalWall({x:0, y: 0}, 20 + Math.random() * (self.width * 0.7 - 20));
+        wall = wall.endAtPoint(wallToExtend.getCenterPoint());
         interiorWalls.push(wall);
         break;
       case 1:
@@ -306,7 +319,7 @@ var House = function () {
             wallToExtend = topWall.rightWall;
           }
         }
-        var wall = new VerticalWall(wallToExtend.getCenterPoint(), 20 + Math.random() * (self.height * 0.7 - 20));
+        wall = new VerticalWall(wallToExtend.getCenterPoint(), 20 + Math.random() * (self.height * 0.7 - 20));
         interiorWalls.push(wall);
         break;
       case 2:
@@ -319,7 +332,7 @@ var House = function () {
             wallToExtend = leftWall.bottomWall;
           }
         }
-        var wall = new HorizontalWall(wallToExtend.getCenterPoint(), 20 + Math.random() * (self.width * 0.7 - 20));
+        wall = new HorizontalWall(wallToExtend.getCenterPoint(), 20 + Math.random() * (self.width * 0.7 - 20));
         interiorWalls.push(wall);
         break;
       case 3:
@@ -332,8 +345,8 @@ var House = function () {
             wallToExtend = bottomWall.rightWall;
           }
         }
-        var wall = new VerticalWall({x: 0, y: 0}, 50 + Math.random() * (self.height * 0.7 - 50));
-        wall.endAtPoint(wallToExtend.getCenterPoint());
+        wall = new VerticalWall({x: 0, y: 0}, 50 + Math.random() * (self.height * 0.7 - 50));
+        wall = wall.endAtPoint(wallToExtend.getCenterPoint());
         interiorWalls.push(wall);
         break;
     }
@@ -346,17 +359,17 @@ var House = function () {
 };
 House.list = {};
 
-var createNewMap = function () {
-  for (var id in Wall.list){
+let createNewMap = function () {
+  House.list = {};
+  for (let id in Wall.list){
     delete Wall.list[id];
     removePack.wall.push(id);
   }
 
-  var topWall = new Wall({x: 0, y: 0}, MAPWIDTH, 10);
-  var rightWall = new Wall(topWall.getEndPoint(), 10, MAPHEIGHT);
-  var bottomWall = new Wall(rightWall.getEndPoint(), MAPWIDTH, 10);
-  bottomWall.endAtPoint(rightWall.getEndPoint());
-  var leftWall = new Wall(topWall.startPoint, 10, MAPHEIGHT);
+  let topWall = new Wall({x: 0, y: 0}, MAPWIDTH, 10);
+  let rightWall = new Wall(topWall.getEndPoint(), 10, MAPHEIGHT);
+  let leftWall = new Wall(topWall.startPoint, 10, MAPHEIGHT);
+  let bottomWall = new Wall(leftWall.getEndPoint(), MAPWIDTH, 10);
 
   House();
   House();
@@ -367,8 +380,8 @@ var createNewMap = function () {
 
 createNewMap();
 
-var Bomb = function () {
-  var self = Entity();
+let Bomb = function () {
+  let self = Entity();
 
   self.width = 10;
   self.height = 10;
@@ -377,8 +390,8 @@ var Bomb = function () {
   self.timeToExplode = 1000 / 40 * 40;
 
   self.explode = function() {
-    for (var i = 0; i < 50; i++){
-      var bullet = Bullet('bomb', Math.random()*360);
+    for (let i = 0; i < 50; i++){
+      let bullet = Bullet('bomb', Math.random()*360);
       bullet.x = self.x;
       bullet.y = self.y;
       bullet.width -= 2;
@@ -386,8 +399,7 @@ var Bomb = function () {
       bullet.damage = 40;
     }
     bomb = undefined;
-    teams.attacker.score++;
-    round.isFinished = true;
+    teams.handleAttackerWin();
   };
 
   self.update = function () {
@@ -424,7 +436,7 @@ var Bomb = function () {
   return self;
 };
 
-var bomb = undefined;
+let bomb = undefined;
 
 Bomb.update = function () {
   bomb.update();
@@ -434,8 +446,8 @@ Bomb.update = function () {
   return undefined
 };
 
-var Player = function(id){
-  var self = Entity();
+let Player = function(id){
+  let self = Entity();
 
   self.id =             id;
   self.name =           "unnamed";
@@ -463,6 +475,12 @@ var Player = function(id){
   self.maxStamina =     100;
   self.stamina =        100;
   self.acceleration =   0.2;
+  self.maxAmmo =        30;
+  self.ammo =           30;
+  self.reloadTimer =    0;
+  self.reloadTime =     1000 / 10;
+  self.isReloading =    false;
+  self.pressingReload = false;
   self.attackTimer =    0;
   self.attackRate =     1000 / 100;
   self.team =           '';
@@ -470,9 +488,9 @@ var Player = function(id){
   self.canInteract =    false;
   self.isInteracting =  false;
   self.interactTimer =  0;
-  self.timeToInteract = 1000 / 40 * 8;
+  self.timeToInteract = 1000 / 40 * 6;
 
-  var super_update = self.update;
+  let super_update = self.update;
   self.update = function () {
     self.updateSpeed();
     super_update();
@@ -482,30 +500,45 @@ var Player = function(id){
       self.updateInteracting();
 
       self.attackTimer++;
-      if (self.pressingAttack && self.attackTimer >= self.attackRate){
+      if (self.pressingAttack &&
+          self.attackTimer >= self.attackRate &&
+          !self.isInteracting &&
+          !self.isReloading &&
+          self.ammo > 0){
         /*  ---- "SHOTGUN" ----
-        for (var i = -3; i < 3; i++){
+        for (let i = -3; i < 3; i++){
           self.shootBullet(i*10 + self.mouseAngle)
         }
         */
         self.shootBullet(self.mouseAngle + Math.random() * self.recoil - self.recoil/2);
         self.attackTimer = 0;
+        self.ammo--;
+      }
+      if (self.pressingReload && self.ammo < self.maxAmmo && !self.isInteracting){
+        self.isReloading = true
+      }
+      if (self.isReloading){
+        if (self.reloadTimer++ >= self.reloadTime){
+          self.ammo = self.maxAmmo;
+          self.isReloading = false;
+          self.reloadTimer = 0;
+        }
       }
     }
   };
 
   self.updateCanInteract = function(){
     self.canInteract = false;
-    if (self.speedX === 0 && self.speedY === 0){
+    if (self.speedX === 0 && self.speedY === 0 && !self.isReloading){
       if (self.team === 'attacker'){
         if (bomb === undefined){
-          if (self.isCollidingWithRect(areas.plantA) || self.isCollidingWithRect(areas.plantB) && !round.isRestarting){
+          if (self.isInsidePlantArea() && !round.isRestarting){
             self.canInteract = true;
           }
         }
       }else {
         if (bomb && !bomb.defused){
-          if (self.getDistance(bomb) < 40){
+          if (self.isCollidingWithRect(bomb)){
             self.canInteract = true;
           }
         }
@@ -515,10 +548,12 @@ var Player = function(id){
 
   self.updateInteracting = function(){
     if(self.pressingInteract && self.canInteract){
-        if (self.interactTimer++ > self.timeToInteract){
-          self.interact();
-        }
+      self.isInteracting = true;
+      if (self.interactTimer++ > self.timeToInteract){
+        self.interact();
+      }
     } else {
+      self.isInteracting = false;
       self.interactTimer = 0;
     }
   };
@@ -530,19 +565,19 @@ var Player = function(id){
       bomb.y = self.y + self.height/2 - bomb.height/2;
     } else {
       bomb.defused = true;
-      teams.defender.score++;
+      teams.handleDefenderWin();
     }
     self.score += 2;
   };
 
   self.shootBullet = function(angle){
-    var bullet = Bullet(self.id, angle);
+    let bullet = Bullet(self.id, angle);
     bullet.x = self.x + self.width/2;
     bullet.y = self.y + self.height/2;
   };
 
   self.isCollidingWithAnyWalls = function() {
-    for(var i in Wall.list){
+    for(let i in Wall.list){
       if(self.isCollidingWithRect(Wall.list[i])){
         return true;
       }
@@ -648,19 +683,24 @@ var Player = function(id){
     self.hp = self.hpMax;
     self.isDead = false;
     self.stamina = self.maxStamina;
-    do{
-      if(self.team === 'attacker'){
+    self.ammo = self.maxAmmo;
+    self.isReloading = false;
+    self.reloadTimer = 0;
+    if(self.team === 'attacker'){
+      do {
         self.x = Math.random() * areas.attacker.width + areas.attacker.x;
         self.y = Math.random() * areas.attacker.height + areas.attacker.y
-      } else {
+      } while (!self.isInsideRect(areas.attacker));
+    } else {
+      do {
         self.x = Math.random() * areas.defender.width + areas.defender.x;
-        self.y = Math.random() * areas.defender.height + areas.defender.y
-      }
-    }while (self.isCollidingWithAnyWalls());
+        self.y = Math.random() * areas.defender.height + areas.defender.y;
+      } while (!self.isInsideRect(areas.defender));
+    }
   };
 
-  var distanceCounter = 1;
-  var DIRECTION = ["UP", "RIGHT", "DOWN", "LEFT"];
+  let distanceCounter = 1;
+  let DIRECTION = ["UP", "RIGHT", "DOWN", "LEFT"];
   DIRECTION.counter = 0;
   DIRECTION.Next = function () {
     if (DIRECTION.counter++ > 3){
@@ -671,9 +711,9 @@ var Player = function(id){
   };
 
   self.handleWallCollision = function () {
-    var firstIteration = false;
-    for (var i in Wall.list){
-      var wall = Wall.list[i];
+    let firstIteration = false;
+    for (let i in Wall.list){
+      let wall = Wall.list[i];
       distanceCounter = 1;
       while (self.isCollidingWithRect(wall)){
         //RESET POS BEFORE OFFSET
@@ -731,7 +771,12 @@ var Player = function(id){
       team:        self.team,
       canInteract: self.canInteract,
       interactTimer: self.interactTimer,
-      timeToInteract: self.timeToInteract
+      timeToInteract: self.timeToInteract,
+      maxAmmo:        self.maxAmmo,
+      ammo:           self.ammo,
+      reloadTimer:    self.reloadTimer,
+      reloadTime:     self.reloadTime,
+      isReloading:    self.isReloading,
     }
   };
   self.getUpdatePack = function(){
@@ -751,7 +796,10 @@ var Player = function(id){
       deathCount:  self.deathCount,
       team:        self.team,
       canInteract: self.canInteract,
-      interactTimer: self.interactTimer
+      interactTimer: self.interactTimer,
+      ammo:           self.ammo,
+      reloadTimer:    self.reloadTimer,
+      isReloading:    self.isReloading,
     }
   };
 
@@ -763,7 +811,14 @@ var Player = function(id){
 Player.list = {};
 
 Player.onConnect = function(socket) {
-  var player = Player(socket.id);
+  let player = Player(socket.id);
+  for (let i in Player.list){
+    if (Player.list[i].id !== socket.id && !Player.list[i].isDead){
+      player.x = Player.list[i].x;
+      player.y = Player.list[i].y;
+      break;
+    }
+  }
   if(teams.attacker.players.length > teams.defender.players.length){
     player.team = 'defender';
     teams.defender.players.push(player);
@@ -798,11 +853,14 @@ Player.onConnect = function(socket) {
       case 'interact':
         player.pressingInteract = data.state;
         break;
+      case 'reload':
+        player.pressingReload = data.state;
+        break;
     }
   });
 
   socket.on('newName', function(data){
-    player.name = data;
+    player.name = data.substr(0,16);
   });
 
   socket.emit('init', {
@@ -816,31 +874,31 @@ Player.onConnect = function(socket) {
 };
 
 Player.getAllInitpack = function(){
-  var players = [];
-  for(var i in Player.list){
+  let players = [];
+  for(let i in Player.list){
     players.push(Player.list[i].getInitPack());
   }
   return players;
 };
 
 Player.onDisconnect = function(socket){
-  var player = Player.list[socket.id];
+  let player = Player.list[socket.id];
   teams.removePlayer(player);
   delete Player.list[socket.id];
   removePack.player.push(socket.id);
 };
 
 Player.update = function() {
-  var packet = [];
-  for (var id in Player.list){
-    var player = Player.list[id];
+  let packet = [];
+  for (let id in Player.list){
+    let player = Player.list[id];
     player.update();
     packet.push(player.getUpdatePack());
   }
   return packet;
 };
 
-var teams = {
+let teams = {
   attacker: {
     score: 0,
     players: [],
@@ -880,7 +938,7 @@ var teams = {
   },
   isAllAttackersDead: function () {
     if (teams.attacker.players.length > 0){
-      for(var i = 0; i < teams.attacker.players.length; i++){
+      for(let i = 0; i < teams.attacker.players.length; i++){
         if (!teams.attacker.players[i].isDead){
           return false;
         }
@@ -891,7 +949,7 @@ var teams = {
   },
   isAllDefendersDead: function () {
     if (teams.defender.players.length > 0){
-      for(var i = 0; i < teams.defender.players.length; i++){
+      for(let i = 0; i < teams.defender.players.length; i++){
         if (!teams.defender.players[i].isDead){
           return false;
         }
@@ -899,31 +957,47 @@ var teams = {
       return true;
     }
     return false;
+  },
+  handleAttackerWin: function () {
+    teams.attacker.score++;
+    for (let id in SOCKET_LIST){
+      let socket = SOCKET_LIST[id];
+      socket.emit('attackerWin');
+      round.isFinished = true;
+    }
+  },
+  handleDefenderWin: function () {
+    teams.defender.score++;
+    for (let id in SOCKET_LIST){
+      let socket = SOCKET_LIST[id];
+      socket.emit('defenderWin');
+      round.isFinished = true;
+    }
   }
 };
 
-var plantAreaA = {
-  x: 50 + MAPWIDTH / 2 + Math.random() * 250,
+let plantAreaA = {
+  x: 50 + MAPWIDTH / 2 + Math.random() * 500,
   y: Math.random() * (MAPHEIGHT/2 - 250),
   width: 200 + Math.random() * 50,
   height: 200 + Math.random() * 50,
 };
 
-var plantAreaB = {
-  x: 50 + MAPWIDTH / 2 + Math.random() * 250,
+let plantAreaB = {
+  x: 50 + MAPWIDTH / 2 + Math.random() * 500,
   y: Math.random() * (MAPHEIGHT/2 - 250) + MAPHEIGHT/2,
   width: 200 + Math.random() * 50,
   height: 200 + Math.random() * 50,
 };
 
-var areas = {
+let areas = {
   attacker: teams.attacker.spawnArea,
   defender: teams.defender.spawnArea,
   plantA: plantAreaA,
   plantB: plantAreaB
 };
 
-var round = {
+let round = {
   maxTime: 120,
   timer: 120,
   counter: 0,
@@ -933,37 +1007,38 @@ var round = {
   update: function () {
     if(!round.isFinished && teams.attacker.players.length > 0){
       if(bomb !== undefined && bomb.defused){
-        round.isFinished = true;
+        teams.handleDefenderWin();
       }
       if (round.timer <= 0){
-        teams.defender.score++;
-        round.isFinished = true;
+        teams.handleDefenderWin();
       }
       if(bomb === undefined && teams.isAllAttackersDead()){
-        teams.defender.score++;
-        round.isFinished = true;
+        teams.handleDefenderWin();
       }
       if(teams.isAllDefendersDead()){
-        teams.attacker.score++;
-        round.isFinished = true;
+        teams.handleAttackerWin();
       }
     }
   },
   startNewRound: function () {
+    round.counter++;
+
     bomb = undefined;
     round.isFinished = false;
     round.isRestarting = false;
     round.timer = round.maxTime;
 
     teams.autoBalance();
-    for (var i in Player.list){
+    for (let i in Player.list){
       Player.list[i].reSpawn();
     }
+
+    createNewMap();
   }
 };
 
-var Bullet = function(parent, angle){
-  var self = Entity();
+let Bullet = function(parent, angle){
+  let self = Entity();
   self.id =       Math.random();
   self.parent =   parent;
   self.maxSpeed = 8;
@@ -979,7 +1054,7 @@ var Bullet = function(parent, angle){
 
   self.friendlyFire = false;
 
-  var super_update = self.update;
+  let super_update = self.update;
   self.update = function(){
     if(self.timer++ > self.maxTime){
       self.toRemove = true;
@@ -990,19 +1065,19 @@ var Bullet = function(parent, angle){
     self.speedY /= 1.005;
     self.damage /= 1.015;
 
-    for (var i in Wall.list) {
-      var wall = Wall.list[i];
+    for (let i in Wall.list) {
+      let wall = Wall.list[i];
       if(self.isCollidingWithRect(wall)){
         self.toRemove = true;
       }
     }
 
-    for (var i in Player.list) {
-      var player = Player.list[i];
+    for (let i in Player.list) {
+      let player = Player.list[i];
       if (!player.isDead){
         if(self.isCollidingWithRect(player)){
-          var shooter = Player.list[self.parent];
-          var isOpponent = false;
+          let shooter = Player.list[self.parent];
+          let isOpponent = false;
           if (shooter === player){
             isOpponent = false;
           }else if(self.friendlyFire || self.parent === 'bomb'){
@@ -1019,8 +1094,9 @@ var Bullet = function(parent, angle){
               }
               player.isDead = true;
               player.deathCount++;
-
-              sendKillFeed(shooter, player);
+              if (self.parent !== 'bomb'){
+                sendKillFeed(shooter, player);
+              }
             }
             self.toRemove = true;
           }
@@ -1056,9 +1132,9 @@ var Bullet = function(parent, angle){
 Bullet.list = {};
 
 Bullet.update = function() {
-  var packet = [];
-  for (var id in Bullet.list){
-    var bullet = Bullet.list[id];
+  let packet = [];
+  for (let id in Bullet.list){
+    let bullet = Bullet.list[id];
     bullet.update();
     if(bullet.toRemove){
       delete Bullet.list[id];
@@ -1071,28 +1147,28 @@ Bullet.update = function() {
 };
 
 Bullet.getAllInitpack = function(){
-  var bullets = [];
-  for(var id in Bullet.list){
+  let bullets = [];
+  for(let id in Bullet.list){
     bullets.push(Bullet.list[id].getInitPack());
   }
   return bullets;
 };
 
-var sendKillFeed = function (shooter, killed) {
-  var killFeedData = {
+let sendKillFeed = function (shooter, killed) {
+  let killFeedData = {
     shooterName:  shooter.name,
     shooterTeam:  shooter.team,
     killedName:   killed.name,
     killedTeam:   killed.team,
     opacity:      300
   };
-  for (var id in SOCKET_LIST){
-    var socket = SOCKET_LIST[id];
+  for (let id in SOCKET_LIST){
+    let socket = SOCKET_LIST[id];
     socket.emit('killFeed', killFeedData);
   }
 };
 
-var io = require('socket.io')(serv,{});
+let io = require('socket.io')(serv,{});
 io.sockets.on('connection', function(socket){
   socket.id = Math.random();
   SOCKET_LIST[socket.id] = socket;
@@ -1109,7 +1185,7 @@ io.sockets.on('connection', function(socket){
 });
 
 setInterval(function(){
-  var updatePack = {
+  let updatePack = {
     player: Player.update(),
     bullet: Bullet.update(),
   };
@@ -1128,8 +1204,8 @@ setInterval(function(){
   updatePack.attackerScore = teams.attacker.score;
   updatePack.defenderScore = teams.defender.score;
 
-  for (var id in SOCKET_LIST){
-    var socket = SOCKET_LIST[id];
+  for (let id in SOCKET_LIST){
+    let socket = SOCKET_LIST[id];
     socket.emit('init', initPack);
     socket.emit('update', updatePack);
     socket.emit('remove', removePack);
@@ -1147,11 +1223,11 @@ setInterval(function(){
 }, 1000/40);
 
 setInterval(function () {
-  if(round.timer > 0 && bomb === undefined){
+  if(round.timer > 0 && bomb === undefined && !round.isRestarting){
     round.timer--;
   }
-  for (var id in SOCKET_LIST){
-    var socket = SOCKET_LIST[id];
+  for (let id in SOCKET_LIST){
+    let socket = SOCKET_LIST[id];
     socket.emit('roundTime', round.timer);
   }
 }, 1000);

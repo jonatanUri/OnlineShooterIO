@@ -1,32 +1,32 @@
-var socket = io({transports: ['websocket']});
-var display = document.getElementById("display");
-var WIDTH = display.width;
-var HEIGHT = display.height;
-var ctx = display.getContext("2d");
+let socket = io({transports: ['websocket']});
+let display = document.getElementById("display");
+let WIDTH = display.width;
+let HEIGHT = display.height;
+let ctx = display.getContext("2d");
 ctx.font = "10px Arial";
 
 function emitNewName(){
   socket.emit('newName', nameBox.value);
 }
 
-var nameBox = document.getElementById("nameBox");
+let nameBox = document.getElementById("nameBox");
 nameBox.addEventListener("change", emitNewName);
 nameBox.addEventListener("onkeypress", emitNewName);
 
-var areas = {
+let areas = {
   attacker: {},
   defender: {},
   plantA: {},
   plantB: {},
 };
 
-var attackerScore = 0;
-var defenderScore = 0;
+let attackerScore = 0;
+let defenderScore = 0;
 
-var bomb = undefined;
+let bomb = undefined;
 
-var Player = function(initPack){
-  var self = {};
+let Player = function(initPack){
+  let self = {};
   self.id =         initPack.id;
   self.name =       initPack.name;
   self.x =          initPack.x;
@@ -46,15 +46,20 @@ var Player = function(initPack){
   self.pressingTab = false;
   self.interactTimer = initPack.interactTimer;
   self.timeToInteract = initPack.timeToInteract;
+  self.maxAmmo =        initPack.maxAmmo;
+  self.ammo =           initPack.ammo;
+  self.reloadTimer =    initPack.reloadTimer;
+  self.reloadTime =     initPack.reloadTime;
+  self.isReloading =    initPack.isReloading;
 
   self.draw = function(){
     if(!self.isDead){
-      var x = self.x - Player.list[selfId].x + WIDTH/2;
-      var y = self.y - Player.list[selfId].y + HEIGHT/2;
+      let x = self.x - Player.list[selfId].x + WIDTH/2;
+      let y = self.y - Player.list[selfId].y + HEIGHT/2;
 
-      var barWidth = 30;
+      let barWidth = 30;
 
-      var hpWidth = barWidth * self.hp / self.hpMax;
+      let hpWidth = barWidth * self.hp / self.hpMax;
       ctx.fillStyle = '#222222A0';
       ctx.fillRect(x - barWidth/2 + self.width/2, y - 10, barWidth, 4);
 
@@ -81,8 +86,8 @@ var Player = function(initPack){
 };
 Player.list = {};
 
-var Wall = function (initPack) {
-  var self = {};
+let Wall = function (initPack) {
+  let self = {};
   self.id =     initPack.id;
   self.x =      initPack.x;
   self.y =      initPack.y;
@@ -90,8 +95,8 @@ var Wall = function (initPack) {
   self.height = initPack.height;
 
   self.draw = function () {
-    var x = self.x - Player.list[selfId].x + WIDTH/2;
-    var y = self.y - Player.list[selfId].y + HEIGHT/2;
+    let x = self.x - Player.list[selfId].x + WIDTH/2;
+    let y = self.y - Player.list[selfId].y + HEIGHT/2;
     ctx.fillStyle = "#000000";
     ctx.fillRect(x, y, self.width, self.height);
   };
@@ -102,8 +107,8 @@ var Wall = function (initPack) {
 Wall.list = {};
 
 
-var Bullet = function(initPack){
-  var self = {};
+let Bullet = function(initPack){
+  let self = {};
   self.id = initPack.id;
   self.x = initPack.x;
   self.y = initPack.y;
@@ -111,8 +116,8 @@ var Bullet = function(initPack){
   self.height = initPack.height;
 
   self.draw = function(){
-    var x = self.x - Player.list[selfId].x + WIDTH/2;
-    var y = self.y - Player.list[selfId].y + HEIGHT/2;
+    let x = self.x - Player.list[selfId].x + WIDTH/2;
+    let y = self.y - Player.list[selfId].y + HEIGHT/2;
     ctx.fillStyle = "#000000";
     ctx.fillRect(x, y, self.width, self.height);
   };
@@ -122,23 +127,23 @@ var Bullet = function(initPack){
 };
 Bullet.list = {};
 
-var selfId = null;
+let selfId = null;
 
 socket.on('init',function(data){
   if(data.selfId){
     selfId = data.selfId;
   }
 
-  for(var i = 0 ; i < data.player.length; i++){
+  for(let i = 0 ; i < data.player.length; i++){
     new Player(data.player[i]);
   }
   if(data.wall){
-    for(var i = 0; i < data.wall.length; i++){
+    for(let i = 0; i < data.wall.length; i++){
       new Wall(data.wall[i]);
     }
   }
   if(data.bullet){
-    for(var i = 0 ; i < data.bullet.length; i++){
+    for(let i = 0 ; i < data.bullet.length; i++){
       new Bullet(data.bullet[i]);
     }
   }
@@ -169,9 +174,9 @@ socket.on('init',function(data){
 });
 
 socket.on("update", function(data){
-  for (var i = 0; i < data.player.length; i++) {
-    var packet = data.player[i];
-    var player = Player.list[packet.id];
+  for (let i = 0; i < data.player.length; i++) {
+    let packet = data.player[i];
+    let player = Player.list[packet.id];
     if(player){
       if(packet.name !== undefined){
         player.name = packet.name;
@@ -221,11 +226,23 @@ socket.on("update", function(data){
       if(packet.isDead !== undefined){
         player.isDead = packet.isDead;
       }
+      if(packet.interactTime !== undefined){
+        player.interactTime = packet.interactTime;
+      }
+      if(packet.ammo !== undefined){
+        player.ammo = packet.ammo;
+      }
+      if(packet.reloadTimer !== undefined){
+        player.reloadTimer = packet.reloadTimer;
+      }
+      if(packet.isReloading !== undefined){
+        player.isReloading = packet.isReloading;
+      }
     }
   }
-  for (var i = 0; i < data.bullet.length; i++) {
-    var packet = data.bullet[i];
-    var bullet = Bullet.list[packet.id];
+  for (let i = 0; i < data.bullet.length; i++) {
+    let packet = data.bullet[i];
+    let bullet = Bullet.list[packet.id];
     if (bullet){
       if(packet.x !== undefined){
         bullet.x = packet.x;
@@ -253,18 +270,18 @@ socket.on("update", function(data){
 });
 
 socket.on('remove', function(data) {
-  for (var i = 0; i < data.player.length; i++) {
+  for (let i = 0; i < data.player.length; i++) {
     delete Player.list[data.player[i]];
   }
-  for (var i = 0; i < data.bullet.length; i++) {
+  for (let i = 0; i < data.bullet.length; i++) {
     delete Bullet.list[data.bullet[i]];
   }
-  for (var i = 0; i < data.wall.length; i++){
+  for (let i = 0; i < data.wall.length; i++){
     delete Wall.list[data.wall[i]];
   }
 });
 
-var roundTime = 0;
+let roundTime = 0;
 
 socket.on('roundTime', function (data) {
   if (data){
@@ -280,13 +297,13 @@ setInterval(function(){
   drawScore();
   drawPosition();
 
-  for(var i in Wall.list){
+  for(let i in Wall.list){
     Wall.list[i].draw();
   }
-  for(var i in Player.list){
+  for(let i in Player.list){
     Player.list[i].draw();
   }
-  for(var i in Bullet.list){
+  for(let i in Bullet.list){
     Bullet.list[i].draw();
   }
 
@@ -294,34 +311,117 @@ setInterval(function(){
   drawAlivePlayerCount();
   drawRoundTime();
   drawKillFeed();
+  drawWinText();
   drawBomb();
   if (!Player.list[selfId].isDead){
     drawInteract();
     drawHp();
     drawStamina();
+    drawAmmo();
   }
 
   if(Player.list[selfId].isDead){
     ctx.fillStyle = '#00000030';
     ctx.fillRect(0,0, WIDTH, HEIGHT);
+
+    ctx.font = '15px Arial';
+    ctx.fillStyle = '#000000AA';
+    let deadText = 'You are dead, wait for respawn!';
+    let x = WIDTH/2 - ctx.measureText(deadText).width/2;
+    ctx.fillText(deadText, x, HEIGHT/2 + 50);
+    ctx.font = '10px Arial';
   }
 
 }, 1000/45);
 
-var killFeedList = [];
+let drawAmmo = function () {
+  let maxAmmoBarSize = 80;
+  let ammoBarHeight = 12;
+  let ammoBarSize = 0;
+  let x = WIDTH/2 - maxAmmoBarSize/2 + Player.list[selfId].width/2;
+  let y = HEIGHT - 60;
+  ctx.fillStyle = '#30303030';
+  ctx.fillRect(x, y, maxAmmoBarSize, ammoBarHeight);
+
+  if(Player.list[selfId].isReloading){
+    ammoBarSize = Player.list[selfId].reloadTimer / Player.list[selfId].reloadTime * maxAmmoBarSize;
+    ctx.fillStyle = '#B5C143AA';
+    ctx.fillRect(x, y, ammoBarSize, ammoBarHeight);
+  } else {
+    ammoBarSize = Player.list[selfId].ammo / Player.list[selfId].maxAmmo * maxAmmoBarSize;
+    ctx.fillStyle = '#B5C143';
+    ctx.fillRect(x, y, ammoBarSize, ammoBarHeight);
+    if (Player.list[selfId].ammo === 0){
+      ctx.fillStyle = '#000000AA';
+      let reloadText = 'Press R to reload';
+      let textX = WIDTH/2 - ctx.measureText(reloadText).width/2 + Player.list[selfId].width/2;
+      let textY = y+10;
+      ctx.fillText(reloadText, textX, textY);
+    } else {
+      ctx.fillStyle = '#000000AA';
+      let ammoText = Player.list[selfId].ammo.toString();
+      let ammoX = WIDTH/2 - ctx.measureText(ammoText).width/2 + Player.list[selfId].width/2;
+      let ammoY = y+10;
+      ctx.fillText(ammoText, ammoX, ammoY);
+    }
+  }
+};
+
+let winText = '';
+let winnerTeam = '';
+let winTextOpacity = 0;
+
+socket.on('attackerWin', function () {
+  winText = 'Attackers won!';
+  winnerTeam = 'attacker';
+  winTextOpacity = 500;
+});
+
+socket.on('defenderWin', function () {
+  winText = 'Defenders won!';
+  winnerTeam = 'defender';
+  winTextOpacity = 500;
+});
+
+let drawWinText = function () {
+  if (winTextOpacity-- > 0){
+    let opacity;
+    if (winTextOpacity > 255){
+      opacity = 'FF';
+    } else {
+      opacity = winTextOpacity.toString(16);
+    }
+    if (opacity.length < 2){
+      opacity = 0 + opacity;
+    }
+    ctx.font = "20px Arial";
+    let x = WIDTH/2 - ctx.measureText(winText).width/2;
+    let y = 70;
+    if(winnerTeam === 'attacker'){
+      ctx.fillStyle = '#ed5f2b' + opacity;
+    } else {
+      ctx.fillStyle = '#3694c7' + opacity;
+    }
+    ctx.fillText(winText, x, y);
+    ctx.font = "10px Arial";
+  }
+};
+
+let killFeedList = [];
 
 socket.on('killFeed', function (data) {
   killFeedList.push(data);
 });
 
-var drawKillFeed = function () {
-  var y = 20;
-  for (var i = 0; i < killFeedList.length; i++){
+let drawKillFeed = function () {
+  let y = 20;
+  ctx.font = '15px Arial';
+  for (let i = 0; i < killFeedList.length; i++){
     if (killFeedList[i].opacity-- === 0){
       killFeedList.splice(i, 1);
     } else {
-      var x = 400;
-      var opacity;
+      let x = 400;
+      let opacity;
       if (killFeedList[i].opacity > 255){
         opacity = 'FF';
       } else {
@@ -347,15 +447,16 @@ var drawKillFeed = function () {
         ctx.fillStyle = '#3694c7' + opacity;
       }
       ctx.fillText(killFeedList[i].killedName, x, y);
-      y += 10;
+      y += 15;
     }
   }
+  ctx.font = '10px Arial';
 };
 
-var drawBomb = function () {
+let drawBomb = function () {
   if (bomb !== undefined){
-    var x = bomb.x - Player.list[selfId].x + WIDTH/2;
-    var y = bomb.y - Player.list[selfId].y + HEIGHT/2;
+    let x = bomb.x - Player.list[selfId].x + WIDTH/2;
+    let y = bomb.y - Player.list[selfId].y + HEIGHT/2;
     if(!bomb.defused){
       ctx.fillStyle = "#000000";
       ctx.fillRect(x, y, bomb.width, bomb.height);
@@ -368,30 +469,30 @@ var drawBomb = function () {
   }
 };
 
-var bombColor = "#FF0000";
-var bombColorCounter = 255;
-var bombSound = new Audio('../client/audio/bombSound.mp3');
+let bombColor = "#FF0000";
+let bombColorCounter = 255;
+let bombSound = new Audio('../client/audio/bombSound.mp3');
 setInterval(function () {
   if (bomb !== undefined && !bomb.defused){
-    var counterMinus = Math.floor(bomb.timer / bomb.timeToExplode * 25);
+    let counterMinus = Math.floor(bomb.timer / bomb.timeToExplode * 25);
     bombColorCounter -= counterMinus;
     if (bombColorCounter <= 0){
       bombColorCounter = 255;
       bombSound.currentTime = 0;
       bombSound.play();
     }
-    var bombColorCounterHexa = bombColorCounter;
+    let bombColorCounterHexa = bombColorCounter;
     bombColor = "#FF0000" + Math.floor(bombColorCounterHexa).toString(16);
   }
 }, 1000/45);
 
-var interactBarWidth = 40;
-var interactBarHeight = 5;
+let interactBarWidth = 40;
+let interactBarHeight = 5;
 
-var drawInteract = function () {
+let drawInteract = function () {
   if(Player.list[selfId].canInteract){
-    var interactText = '';
-    var barStyle = '';
+    let interactText = '';
+    let barStyle = '';
     if(Player.list[selfId].team === 'attacker'){
       interactText = 'Hold F to plant the bomb';
       barStyle = '#FF0000';
@@ -399,13 +500,13 @@ var drawInteract = function () {
       interactText = 'Hold F to defuse';
       barStyle = '#0000FF';
     }
-    var textWidth = ctx.measureText(interactText).width;
+    let textWidth = ctx.measureText(interactText).width;
     ctx.fillStyle = '#000000';
     ctx.fillText(interactText, WIDTH/2 - textWidth/2 + Player.list[selfId].width/2, HEIGHT/2 + 30);
     if(Player.list[selfId].interactTimer > 0){
       ctx.fillStyle = '#10101030';
       ctx.fillRect(WIDTH/2 - interactBarWidth/2 + Player.list[selfId].width/2, HEIGHT/2 + 40, interactBarWidth, interactBarHeight);
-      var interactWidth = interactBarWidth * (Player.list[selfId].interactTimer / Player.list[selfId].timeToInteract);
+      let interactWidth = interactBarWidth * (Player.list[selfId].interactTimer / Player.list[selfId].timeToInteract);
       ctx.fillStyle = barStyle;
       ctx.fillRect(WIDTH/2 - interactBarWidth/2 + Player.list[selfId].width/2, HEIGHT/2 + 40, interactWidth, interactBarHeight);
 
@@ -413,7 +514,7 @@ var drawInteract = function () {
   }
 };
 
-var drawAreas = function () {
+let drawAreas = function () {
   ctx.fillStyle = '#ed5f2b30';
   ctx.fillRect(areas.attacker.x - Player.list[selfId].x + WIDTH/2,
                areas.attacker.y - Player.list[selfId].y + HEIGHT/2,
@@ -431,16 +532,16 @@ var drawAreas = function () {
                    areas.plantB.width, areas.plantB.height);
 };
 
-var drawScore = function(){
+let drawScore = function(){
   ctx.fillStyle = '#404040';
   ctx.fillText('Score: ' + Player.list[selfId].score, 3, 10);
   ctx.fillText('Kills: ' + Player.list[selfId].killCount, 3, 20);
   ctx.fillText('Deaths: ' + Player.list[selfId].deathCount, 3, 30);
 };
 
-var drawTeamScore = function () {
+let drawTeamScore = function () {
   ctx.font = "20px Arial";
-  var x = WIDTH/2 - ctx.measureText(attackerScore.toString() + ' : ' + defenderScore.toString()).width/2;
+  let x = WIDTH/2 - ctx.measureText(attackerScore.toString() + ' : ' + defenderScore.toString()).width/2;
   ctx.fillStyle = '#ed5f2b';
   ctx.fillText(attackerScore.toString(), x, 20);
   x += ctx.measureText(attackerScore.toString()).width;
@@ -453,12 +554,12 @@ var drawTeamScore = function () {
   ctx.font = "10px Arial";
 };
 
-var drawAlivePlayerCount = function () {
-  var attackerAllCount = 0;
-  var defenderAllCount = 0;
-  var attackerAliveCount = 0;
-  var defenderAliveCount = 0;
-  for (var i in Player.list){
+let drawAlivePlayerCount = function () {
+  let attackerAllCount = 0;
+  let defenderAllCount = 0;
+  let attackerAliveCount = 0;
+  let defenderAliveCount = 0;
+  for (let i in Player.list){
     if (Player.list[i].team === 'attacker'){
       attackerAllCount++;
       if (!Player.list[i].isDead){
@@ -473,7 +574,7 @@ var drawAlivePlayerCount = function () {
   }
 
   ctx.font = "12px Arial";
-  var x = WIDTH/2 - ctx.measureText(attackerAllCount + '/' + attackerAliveCount + '   ' +
+  let x = WIDTH/2 - ctx.measureText(attackerAllCount + '/' + attackerAliveCount + '   ' +
                                           defenderAllCount + '/' + defenderAliveCount).width/2;
   ctx.fillStyle = '#ed5f2b';
   ctx.fillText(attackerAllCount + '/' + attackerAliveCount + '   ', x, 32);
@@ -484,20 +585,20 @@ var drawAlivePlayerCount = function () {
   ctx.font = "10px Arial";
 };
 
-var drawRoundTime = function () {
+let drawRoundTime = function () {
   if (bomb === undefined){
-    var minutes = Math.floor(roundTime / 60);
-    var seconds = roundTime - minutes * 60;
+    let minutes = Math.floor(roundTime / 60);
+    let seconds = roundTime - minutes * 60;
     if(seconds < 10){
       seconds = '0'+seconds;
     }
-    var timeString = minutes + ':' + seconds;
-    var x = WIDTH/2 - ctx.measureText(timeString).width/2;
+    let timeString = minutes + ':' + seconds;
+    let x = WIDTH/2 - ctx.measureText(timeString).width/2;
     ctx.fillStyle = '#555555';
     ctx.fillText(timeString, x, 45);
   }else {
-    var x = WIDTH/2 - bomb.width/2;
-    var y = 40;
+    let x = WIDTH/2 - bomb.width/2;
+    let y = 40;
     if(!bomb.defused){
       ctx.fillStyle = "#000000";
       ctx.fillRect(x, y, bomb.width, bomb.height);
@@ -512,27 +613,27 @@ var drawRoundTime = function () {
 
 };
 
-var hpBarWidth = 150;
-var hpBarHeight = 15;
-var drawHp = function () {
+let hpBarWidth = 150;
+let hpBarHeight = 15;
+let drawHp = function () {
   ctx.fillStyle = '#CFFFCCA0';
   ctx.fillRect(WIDTH/2 - hpBarWidth/2 + Player.list[selfId].width/2, HEIGHT-25, hpBarWidth, hpBarHeight);
-  var hpWidth = hpBarWidth * (Player.list[selfId].hp / Player.list[selfId].hpMax);
+  let hpWidth = hpBarWidth * (Player.list[selfId].hp / Player.list[selfId].hpMax);
   ctx.fillStyle = '#23C216C0';
   ctx.fillRect(WIDTH/2 - hpBarWidth/2 + Player.list[selfId].width/2, HEIGHT-25, hpWidth, hpBarHeight);
 };
 
-var staminaBarWidth = 150;
-var staminaBarHeight = 10;
-var drawStamina = function () {
+let staminaBarWidth = 150;
+let staminaBarHeight = 10;
+let drawStamina = function () {
   ctx.fillStyle = '#FDFFC5A0';
   ctx.fillRect(WIDTH/2 - staminaBarWidth/2 + Player.list[selfId].width/2, HEIGHT-10, staminaBarWidth, staminaBarHeight);
-  var staminaWidth = staminaBarWidth * (Player.list[selfId].stamina / Player.list[selfId].maxStamina);
+  let staminaWidth = staminaBarWidth * (Player.list[selfId].stamina / Player.list[selfId].maxStamina);
   ctx.fillStyle = '#FFE300C0';
   ctx.fillRect(WIDTH/2 - staminaBarWidth/2 + Player.list[selfId].width/2, HEIGHT-10, staminaWidth, staminaBarHeight);
 };
 
-var drawPosition = function(){
+let drawPosition = function(){
   ctx.fillStyle = "#404040";
   ctx.fillText('x: ' + Player.list[selfId].x +
               ' y: ' + Player.list[selfId].y,
@@ -562,6 +663,9 @@ document.onkeydown = function(event){
   else if(event.keyCode === 70){ //F
     socket.emit('keyPress', {inputId: 'interact', state: true});
   }
+  else if(event.keyCode === 82){ //R
+    socket.emit('keyPress', {inputId: 'reload', state: true});
+  }
 };
 document.onkeyup = function(event){
   if(event.keyCode === 68){ //D
@@ -586,6 +690,9 @@ document.onkeyup = function(event){
   else if(event.keyCode === 70){ //F
     socket.emit('keyPress', {inputId: 'interact', state: false});
   }
+  else if(event.keyCode === 82){ //R
+    socket.emit('keyPress', {inputId: 'reload', state: false});
+  }
 };
 document.onmousedown = function(event){
   socket.emit('keyPress', {inputId: 'attack', state:true});
@@ -594,8 +701,8 @@ document.onmouseup = function(event){
   socket.emit('keyPress', {inputId: 'attack', state: false});
 };
 document.onmousemove = function(event){
-  var x = -WIDTH/2 + event.clientX - Player.list[selfId].width;
-  var y = -HEIGHT/2 + event.clientY - Player.list[selfId].height;
-  var angle = Math.atan2(y,x) / Math.PI * 180;
+  let x = -WIDTH/2 + event.clientX - Player.list[selfId].width;
+  let y = -HEIGHT/2 + event.clientY - Player.list[selfId].height;
+  let angle = Math.atan2(y,x) / Math.PI * 180;
   socket.emit('keyPress', {inputId: 'mouseAngle', state: angle});
 };
