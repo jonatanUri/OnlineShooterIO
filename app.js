@@ -513,7 +513,7 @@ var Player = function(id){
         self.attackTimer = 0;
         self.ammo--;
       }
-      if (self.pressingReload && self.ammo < self.maxAmmo){
+      if (self.pressingReload && self.ammo < self.maxAmmo && !self.isInteracting){
         self.isReloading = true
       }
       if (self.isReloading){
@@ -528,7 +528,7 @@ var Player = function(id){
 
   self.updateCanInteract = function(){
     self.canInteract = false;
-    if (self.speedX === 0 && self.speedY === 0){
+    if (self.speedX === 0 && self.speedY === 0 && !self.isReloading){
       if (self.team === 'attacker'){
         if (bomb === undefined){
           if (self.isInsidePlantArea() && !round.isRestarting){
