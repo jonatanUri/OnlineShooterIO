@@ -214,7 +214,7 @@ var House = function () {
 
   var makeLeftWall = function () {
     var partWalls = {};
-    var topWallStartPos = {x: self.x, y: self.y};
+    var topWallStartPos = {x: self.x-1, y: self.y};
     if(doorPos.leftWall){
       var topWallLength = Math.random() * (self.height - self.doorSize);
       var bottomWallLength = self.height - self.doorSize - topWallLength;
