@@ -779,6 +779,13 @@ Player.list = {};
 
 Player.onConnect = function(socket) {
   var player = Player(socket.id);
+  for (var i in Player.list){
+    if (Player.list[i].id !== socket.id){
+      player.x = Player.list[i].x;
+      player.y = Player.list[i].y;
+      break;
+    }
+  }
   if(teams.attacker.players.length > teams.defender.players.length){
     player.team = 'defender';
     teams.defender.players.push(player);
