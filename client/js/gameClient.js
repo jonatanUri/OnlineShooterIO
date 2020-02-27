@@ -305,6 +305,13 @@ setInterval(function(){
   if(Player.list[selfId].isDead){
     ctx.fillStyle = '#00000030';
     ctx.fillRect(0,0, WIDTH, HEIGHT);
+
+    ctx.font = '15px Arial';
+    ctx.fillStyle = '#000000AA';
+    var deadText = 'You are dead, wait for respawn!';
+    var x = WIDTH/2 - ctx.measureText(deadText).width/2;
+    ctx.fillText(deadText, x, HEIGHT/2 + 50);
+    ctx.font = '10px Arial';
   }
 
 }, 1000/45);
