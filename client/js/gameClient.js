@@ -364,6 +364,7 @@ socket.on('killFeed', function (data) {
 
 var drawKillFeed = function () {
   var y = 20;
+  ctx.font = '15px Arial';
   for (var i = 0; i < killFeedList.length; i++){
     if (killFeedList[i].opacity-- === 0){
       killFeedList.splice(i, 1);
@@ -395,9 +396,10 @@ var drawKillFeed = function () {
         ctx.fillStyle = '#3694c7' + opacity;
       }
       ctx.fillText(killFeedList[i].killedName, x, y);
-      y += 10;
+      y += 15;
     }
   }
+  ctx.font = '10px Arial';
 };
 
 var drawBomb = function () {
