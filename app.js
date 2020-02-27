@@ -661,15 +661,17 @@ var Player = function(id){
     self.hp = self.hpMax;
     self.isDead = false;
     self.stamina = self.maxStamina;
-    do{
-      if(self.team === 'attacker'){
+    if(self.team === 'attacker'){
+      do {
         self.x = Math.random() * areas.attacker.width + areas.attacker.x;
         self.y = Math.random() * areas.attacker.height + areas.attacker.y
-      } else {
+      } while (!self.isInsideRect(areas.attacker));
+    } else {
+      do {
         self.x = Math.random() * areas.defender.width + areas.defender.x;
-        self.y = Math.random() * areas.defender.height + areas.defender.y
-      }
-    }while (self.isCollidingWithAnyWalls());
+        self.y = Math.random() * areas.defender.height + areas.defender.y;
+      } while (!self.isInsideRect(areas.defender));
+    }
   };
 
   var distanceCounter = 1;
