@@ -493,7 +493,7 @@ var Player = function(id){
       self.updateInteracting();
 
       self.attackTimer++;
-      if (self.pressingAttack && self.attackTimer >= self.attackRate){
+      if (self.pressingAttack && self.attackTimer >= self.attackRate && !self.isInteracting){
         /*  ---- "SHOTGUN" ----
         for (var i = -3; i < 3; i++){
           self.shootBullet(i*10 + self.mouseAngle)
@@ -526,10 +526,12 @@ var Player = function(id){
 
   self.updateInteracting = function(){
     if(self.pressingInteract && self.canInteract){
-        if (self.interactTimer++ > self.timeToInteract){
-          self.interact();
-        }
+      self.isInteracting = true;
+      if (self.interactTimer++ > self.timeToInteract){
+        self.interact();
+      }
     } else {
+      self.isInteracting = false;
       self.interactTimer = 0;
     }
   };
