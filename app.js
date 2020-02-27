@@ -857,7 +857,7 @@ Player.onConnect = function(socket) {
   });
 
   socket.on('newName', function(data){
-    player.name = data;
+    player.name = data.substr(0,16);
   });
 
   socket.emit('init', {
