@@ -809,7 +809,7 @@ Player.list = {};
 Player.onConnect = function(socket) {
   var player = Player(socket.id);
   for (var i in Player.list){
-    if (Player.list[i].id !== socket.id){
+    if (Player.list[i].id !== socket.id && !Player.list[i].isDead){
       player.x = Player.list[i].x;
       player.y = Player.list[i].y;
       break;
