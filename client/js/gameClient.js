@@ -46,6 +46,11 @@ var Player = function(initPack){
   self.pressingTab = false;
   self.interactTimer = initPack.interactTimer;
   self.timeToInteract = initPack.timeToInteract;
+  self.maxAmmo =        initPack.maxAmmo;
+  self.ammo =           initPack.ammo;
+  self.reloadTimer =    initPack.reloadTimer;
+  self.reloadTime =     initPack.reloadTime;
+  self.isReloading =    initPack.isReloading;
 
   self.draw = function(){
     if(!self.isDead){
@@ -221,6 +226,18 @@ socket.on("update", function(data){
       if(packet.isDead !== undefined){
         player.isDead = packet.isDead;
       }
+      if(packet.interactTime !== undefined){
+        player.interactTime = packet.interactTime;
+      }
+      if(packet.ammo !== undefined){
+        player.ammo = packet.ammo;
+      }
+      if(packet.reloadTimer !== undefined){
+        player.reloadTimer = packet.reloadTimer;
+      }
+      if(packet.isReloading !== undefined){
+        player.isReloading = packet.isReloading;
+      }
     }
   }
   for (var i = 0; i < data.bullet.length; i++) {
@@ -300,6 +317,7 @@ setInterval(function(){
     drawInteract();
     drawHp();
     drawStamina();
+    drawAmmo();
   }
 
   if(Player.list[selfId].isDead){
@@ -315,6 +333,39 @@ setInterval(function(){
   }
 
 }, 1000/45);
+
+var drawAmmo = function () {
+  var maxAmmoBarSize = 80;
+  var ammoBarHeight = 12;
+  var ammoBarSize = 0;
+  var x = WIDTH/2 - maxAmmoBarSize/2 + Player.list[selfId].width/2;
+  var y = HEIGHT - 60;
+  ctx.fillStyle = '#30303030';
+  ctx.fillRect(x, y, maxAmmoBarSize, ammoBarHeight);
+
+  if(Player.list[selfId].isReloading){
+    ammoBarSize = Player.list[selfId].reloadTimer / Player.list[selfId].reloadTime * maxAmmoBarSize;
+    ctx.fillStyle = '#B5C143AA';
+    ctx.fillRect(x, y, ammoBarSize, ammoBarHeight);
+  } else {
+    ammoBarSize = Player.list[selfId].ammo / Player.list[selfId].maxAmmo * maxAmmoBarSize;
+    ctx.fillStyle = '#B5C143';
+    ctx.fillRect(x, y, ammoBarSize, ammoBarHeight);
+    if (Player.list[selfId].ammo === 0){
+      ctx.fillStyle = '#000000AA';
+      var reloadText = 'Press R to reload';
+      var textX = WIDTH/2 - ctx.measureText(reloadText).width/2 + Player.list[selfId].width/2;
+      var textY = y+10;
+      ctx.fillText(reloadText, textX, textY);
+    } else {
+      ctx.fillStyle = '#000000AA';
+      var ammoText = Player.list[selfId].ammo.toString();
+      var ammoX = WIDTH/2 - ctx.measureText(ammoText).width/2 + Player.list[selfId].width/2;
+      var ammoY = y+10;
+      ctx.fillText(ammoText, ammoX, ammoY);
+    }
+  }
+};
 
 var winText = '';
 var winnerTeam = '';
@@ -612,6 +663,9 @@ document.onkeydown = function(event){
   else if(event.keyCode === 70){ //F
     socket.emit('keyPress', {inputId: 'interact', state: true});
   }
+  else if(event.keyCode === 82){ //R
+    socket.emit('keyPress', {inputId: 'reload', state: true});
+  }
 };
 document.onkeyup = function(event){
   if(event.keyCode === 68){ //D
@@ -635,6 +689,9 @@ document.onkeyup = function(event){
   }
   else if(event.keyCode === 70){ //F
     socket.emit('keyPress', {inputId: 'interact', state: false});
+  }
+  else if(event.keyCode === 82){ //R
+    socket.emit('keyPress', {inputId: 'reload', state: false});
   }
 };
 document.onmousedown = function(event){

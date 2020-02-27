@@ -474,6 +474,12 @@ var Player = function(id){
   self.maxStamina =     100;
   self.stamina =        100;
   self.acceleration =   0.2;
+  self.maxAmmo =        30;
+  self.ammo =           30;
+  self.reloadTimer =    0;
+  self.reloadTime =     1000 / 10;
+  self.isReloading =    false;
+  self.pressingReload = false;
   self.attackTimer =    0;
   self.attackRate =     1000 / 100;
   self.team =           '';
@@ -493,7 +499,11 @@ var Player = function(id){
       self.updateInteracting();
 
       self.attackTimer++;
-      if (self.pressingAttack && self.attackTimer >= self.attackRate && !self.isInteracting){
+      if (self.pressingAttack &&
+          self.attackTimer >= self.attackRate &&
+          !self.isInteracting &&
+          !self.isReloading &&
+          self.ammo > 0){
         /*  ---- "SHOTGUN" ----
         for (var i = -3; i < 3; i++){
           self.shootBullet(i*10 + self.mouseAngle)
@@ -501,6 +511,17 @@ var Player = function(id){
         */
         self.shootBullet(self.mouseAngle + Math.random() * self.recoil - self.recoil/2);
         self.attackTimer = 0;
+        self.ammo--;
+      }
+      if (self.pressingReload && self.ammo < self.maxAmmo){
+        self.isReloading = true
+      }
+      if (self.isReloading){
+        if (self.reloadTimer++ >= self.reloadTime){
+          self.ammo = self.maxAmmo;
+          self.isReloading = false;
+          self.reloadTimer = 0;
+        }
       }
     }
   };
@@ -746,7 +767,12 @@ var Player = function(id){
       team:        self.team,
       canInteract: self.canInteract,
       interactTimer: self.interactTimer,
-      timeToInteract: self.timeToInteract
+      timeToInteract: self.timeToInteract,
+      maxAmmo:        self.maxAmmo,
+      ammo:           self.ammo,
+      reloadTimer:    self.reloadTimer,
+      reloadTime:     self.reloadTime,
+      isReloading:    self.isReloading,
     }
   };
   self.getUpdatePack = function(){
@@ -766,7 +792,10 @@ var Player = function(id){
       deathCount:  self.deathCount,
       team:        self.team,
       canInteract: self.canInteract,
-      interactTimer: self.interactTimer
+      interactTimer: self.interactTimer,
+      ammo:           self.ammo,
+      reloadTimer:    self.reloadTimer,
+      isReloading:    self.isReloading,
     }
   };
 
@@ -819,6 +848,9 @@ Player.onConnect = function(socket) {
         break;
       case 'interact':
         player.pressingInteract = data.state;
+        break;
+      case 'reload':
+        player.pressingReload = data.state;
         break;
     }
   });
