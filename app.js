@@ -682,6 +682,7 @@ var Player = function(id){
     self.hp = self.hpMax;
     self.isDead = false;
     self.stamina = self.maxStamina;
+    self.ammo = self.maxAmmo;
     if(self.team === 'attacker'){
       do {
         self.x = Math.random() * areas.attacker.width + areas.attacker.x;
