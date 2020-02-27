@@ -136,7 +136,7 @@ var House = function () {
   var self = {
     id:                   Math.random(),
     widthMin:             200,
-    heightMin:            150,
+    heightMin:            180,
     widthVariation:       500,
     heightVariation:      400,
     width:                0,
