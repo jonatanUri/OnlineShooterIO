@@ -920,11 +920,11 @@ let teams = {
     }
   },
   autoBalance: function () {
-    if(teams.attacker.players.length > teams.defender.players.length + 1){
+    while(teams.attacker.players.length > teams.defender.players.length + 1){
       teams.attacker.players[teams.attacker.players.length - 1].team = 'defender';
       teams.defender.players.push(teams.attacker.players.pop());
     }
-    if(teams.attacker.players.length + 1 < teams.defender.players.length ){
+    while(teams.attacker.players.length + 1 < teams.defender.players.length ){
       teams.defender.players[teams.defender.players.length - 1].team = 'attacker';
       teams.attacker.players.push(teams.defender.players.pop());
     }
