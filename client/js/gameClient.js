@@ -51,6 +51,11 @@ let Player = function(initPack){
   self.reloadTimer =    initPack.reloadTimer;
   self.reloadTime =     initPack.reloadTime;
   self.isReloading =    initPack.isReloading;
+  self.specQTimer =     initPack.specQTimer;
+  self.specETimer =     initPack.specETimer;
+  self.specQCD =        initPack.specQCD;
+  self.specECD =        initPack.specECD;
+
 
   self.draw = function(){
     if(!self.isDead){
@@ -238,6 +243,18 @@ socket.on("update", function(data){
       if(packet.isReloading !== undefined){
         player.isReloading = packet.isReloading;
       }
+      if(packet.specQTimer !== undefined){
+        player.specQTimer = packet.specQTimer;
+      }
+      if(packet.specETimer !== undefined){
+        player.specETimer = packet.specETimer;
+      }
+      if(packet.specQCD !== undefined){
+        player.specQCD = packet.specQCD;
+      }
+      if(packet.specECD !== undefined){
+        player.specECD = packet.specECD;
+      }
     }
   }
   for (let i = 0; i < data.bullet.length; i++) {
@@ -318,6 +335,7 @@ setInterval(function(){
     drawHp();
     drawStamina();
     drawAmmo();
+    drawSpec();
   }
 
   if(Player.list[selfId].isDead){
@@ -334,8 +352,70 @@ setInterval(function(){
 
 }, 1000/45);
 
+let drawSpec = function() {
+  let player = Player.list[selfId];
+  let fullSpecBarSize = 100;
+  let maxSpecQBarSize = fullSpecBarSize / 2;
+  let maxSpecEBarSize = fullSpecBarSize / 2;
+  let specBarHeight = 12;
+  let specQBarSize = 0;
+  let specEBarSize = 0;
+
+  let x = WIDTH/2 - fullSpecBarSize / 2 + player.width/2;
+  let y = HEIGHT - 72;
+
+  ctx.fillStyle = '#30303030';
+  ctx.fillRect(x, y, fullSpecBarSize, specBarHeight);
+
+  if (player.specQTimer < player.specQCD){
+    specQBarSize = player.specQTimer / player.specQCD * maxSpecQBarSize;
+    ctx.fillStyle = '#E05050AA';
+    ctx.fillRect(x, y, specQBarSize, specBarHeight);
+  } else {
+    ctx.fillStyle = '#50E050DD';
+    ctx.fillRect(x, y, maxSpecQBarSize, specBarHeight);
+  }
+  let QPercent = Math.floor(player.specQTimer / player.specQCD * 100);
+  let QSpace = "";
+  if (QPercent < 100){
+    QSpace += " ";
+    if(QPercent < 10){
+      QSpace += " ";
+    }
+  }
+  let QPercentText = 'Q: ' + QSpace + QPercent + '%';
+  let QPercentX = x + maxSpecQBarSize/2 - ctx.measureText(QPercentText).width/2;
+  ctx.fillStyle = '#000000';
+  ctx.fillText(QPercentText, QPercentX, y + 10);
+  x += maxSpecQBarSize;
+
+  if (player.specETimer < player.specECD){
+
+    specEBarSize = player.specETimer / player.specECD * maxSpecEBarSize;
+    ctx.fillStyle = '#E05050AA';
+    ctx.fillRect(x, y, specEBarSize, specBarHeight);
+  } else {
+    ctx.fillStyle = '#50E050DD';
+    ctx.fillRect(x, y, maxSpecEBarSize, specBarHeight);
+  }
+  let EPercent = Math.floor(player.specETimer / player.specECD * 100);
+  let ESpace = "";
+  if (EPercent < 100){
+    ESpace += " ";
+    if(EPercent < 10){
+      ESpace += " ";
+    }
+  }
+  let EPercentText = 'E: ' + ESpace + EPercent + '%';
+  let EPercentX = x + maxSpecEBarSize/2 - ctx.measureText(EPercentText).width/2;
+  ctx.fillStyle = '#000000';
+  ctx.fillText(EPercentText, EPercentX, y + 10);
+
+
+};
+
 let drawAmmo = function () {
-  let maxAmmoBarSize = 80;
+  let maxAmmoBarSize = 100;
   let ammoBarHeight = 12;
   let ammoBarSize = 0;
   let x = WIDTH/2 - maxAmmoBarSize/2 + Player.list[selfId].width/2;
@@ -666,6 +746,12 @@ document.onkeydown = function(event){
   else if(event.keyCode === 82){ //R
     socket.emit('keyPress', {inputId: 'reload', state: true});
   }
+  else if(event.keyCode === 81){ //Q
+    socket.emit('keyPress', {inputId: 'specQ', state: true});
+  }
+  else if(event.keyCode === 69){ //E
+    socket.emit('keyPress', {inputId: 'specE', state: true});
+  }
 };
 document.onkeyup = function(event){
   if(event.keyCode === 68){ //D
@@ -692,6 +778,12 @@ document.onkeyup = function(event){
   }
   else if(event.keyCode === 82){ //R
     socket.emit('keyPress', {inputId: 'reload', state: false});
+  }
+  else if(event.keyCode === 81){ //Q
+    socket.emit('keyPress', {inputId: 'specQ', state: false});
+  }
+  else if(event.keyCode === 69){ //E
+    socket.emit('keyPress', {inputId: 'specE', state: false});
   }
 };
 document.onmousedown = function(event){

@@ -465,6 +465,12 @@ let Player = function(id){
   self.pressingDown =   false;
   self.pressingShift =  false;
   self.pressingAttack = false;
+  self.pressingSpecQ =  false;
+  self.pressingSpecE =  false;
+  self.specQTimer =     0;
+  self.specETimer =     0;
+  self.specQCD =        1000 / 40 * 8;
+  self.specECD =        1000 / 40 * 10;
   self.recoil =         8;
   self.mouseAngle =     0;
   self.speedX =         0;
@@ -524,7 +530,28 @@ let Player = function(id){
           self.reloadTimer = 0;
         }
       }
+      if (self.specQTimer < self.specQCD){
+        self.specQTimer++;
+      }
+      if (self.specETimer < self.specECD){
+        self.specETimer++;
+      }
+      if (self.specQTimer === self.specQCD && self.pressingSpecQ){
+        self.specQTimer = 0;
+        self.specQ();
+      }
+      if (self.specETimer === self.specECD && self.pressingSpecE){
+        self.specETimer = 0;
+        self.specE();
+      }
     }
+  };
+
+  self.specQ = function(){
+
+  };
+  self.specE = function(){
+
   };
 
   self.updateCanInteract = function(){
@@ -686,6 +713,8 @@ let Player = function(id){
     self.ammo = self.maxAmmo;
     self.isReloading = false;
     self.reloadTimer = 0;
+    self.specQTimer = self.specQCD;
+    self.specETimer = self.specECD;
     if(self.team === 'attacker'){
       do {
         self.x = Math.random() * areas.attacker.width + areas.attacker.x;
@@ -754,29 +783,33 @@ let Player = function(id){
 
   self.getInitPack = function(){
     return {
-      id:          self.id,
-      name:        self.name,
-      x:           self.x,
-      y:           self.y,
-      width:       self.width,
-      height:      self.height,
-      hp:          self.hp,
-      hpMax:       self.hpMax,
-      isDead:      self.isDead,
-      stamina:     self.stamina,
-      maxStamina:  self.maxStamina,
-      score:       self.score,
-      killCount:   self.killCount,
-      deathCount:  self.deathCount,
-      team:        self.team,
-      canInteract: self.canInteract,
-      interactTimer: self.interactTimer,
+      id:             self.id,
+      name:           self.name,
+      x:              self.x,
+      y:              self.y,
+      width:          self.width,
+      height:         self.height,
+      hp:             self.hp,
+      hpMax:          self.hpMax,
+      isDead:         self.isDead,
+      stamina:        self.stamina,
+      maxStamina:     self.maxStamina,
+      score:          self.score,
+      killCount:      self.killCount,
+      deathCount:     self.deathCount,
+      team:           self.team,
+      canInteract:    self.canInteract,
+      interactTimer:  self.interactTimer,
       timeToInteract: self.timeToInteract,
       maxAmmo:        self.maxAmmo,
       ammo:           self.ammo,
       reloadTimer:    self.reloadTimer,
       reloadTime:     self.reloadTime,
       isReloading:    self.isReloading,
+      specQTimer:     self.specQTimer,
+      specQCD:        self.specQCD,
+      specETimer:     self.specETimer,
+      specECD:        self.specECD,
     }
   };
   self.getUpdatePack = function(){
@@ -800,6 +833,10 @@ let Player = function(id){
       ammo:           self.ammo,
       reloadTimer:    self.reloadTimer,
       isReloading:    self.isReloading,
+      specQTimer:     self.specQTimer,
+      specQCD:        self.specQCD,
+      specETimer:     self.specETimer,
+      specECD:        self.specECD,
     }
   };
 
@@ -855,6 +892,12 @@ Player.onConnect = function(socket) {
         break;
       case 'reload':
         player.pressingReload = data.state;
+        break;
+      case 'specQ':
+        player.pressingSpecQ = data.state;
+        break;
+      case 'specE':
+        player.pressingSpecE = data.state;
         break;
     }
   });
