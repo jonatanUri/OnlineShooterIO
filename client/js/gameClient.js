@@ -55,6 +55,7 @@ let Player = function(initPack){
   self.specETimer =     initPack.specETimer;
   self.specQCD =        initPack.specQCD;
   self.specECD =        initPack.specECD;
+  self.isInvisible =    initPack.isInvisible;
 
 
   self.draw = function(){
@@ -65,22 +66,32 @@ let Player = function(initPack){
       let barWidth = 30;
 
       let hpWidth = barWidth * self.hp / self.hpMax;
-      ctx.fillStyle = '#222222A0';
+
+      var opacity = 'FF';
+      if (self.isInvisible){
+        if(self.team === Player.list[selfId].team){
+          opacity = '77';
+        } else {
+          opacity = '00';
+        }
+      }
+
+      ctx.fillStyle = '#222222' + opacity;
       ctx.fillRect(x - barWidth/2 + self.width/2, y - 10, barWidth, 4);
 
       if (self.team !== Player.list[selfId].team){
-        ctx.fillStyle = '#FF3622C0';
+        ctx.fillStyle = '#FF3622' + opacity;
       } else {
-        ctx.fillStyle = '#23C216C0'
+        ctx.fillStyle = '#23C216' + opacity;
       }
       ctx.fillRect(x - barWidth/2 + self.width/2, y - 10, hpWidth, 4);
-      ctx.fillStyle = '#000000';
+      ctx.fillStyle = '#000000' + opacity;
       ctx.fillText(self.name, x - ctx.measureText(self.name).width/2 + self.width/2, y - 15);
 
       if (self.team === 'attacker'){
-        ctx.fillStyle = '#ed5f2b';
+        ctx.fillStyle = '#ed5f2b' + opacity;
       } else {
-        ctx.fillStyle = '#3694c7';
+        ctx.fillStyle = '#3694c7' + opacity;
       }
       ctx.fillRect(x, y, self.width, self.height);
     }
@@ -237,6 +248,12 @@ socket.on("update", function(data){
       if(packet.ammo !== undefined){
         player.ammo = packet.ammo;
       }
+      if(packet.maxAmmo !== undefined){
+        player.maxAmmo = packet.maxAmmo;
+      }
+      if(packet.reloadTime !== undefined){
+        player.reloadTime = packet.reloadTime;
+      }
       if(packet.reloadTimer !== undefined){
         player.reloadTimer = packet.reloadTimer;
       }
@@ -254,6 +271,9 @@ socket.on("update", function(data){
       }
       if(packet.specECD !== undefined){
         player.specECD = packet.specECD;
+      }
+      if(packet.isInvisible !== undefined){
+        player.isInvisible = packet.isInvisible;
       }
     }
   }
@@ -337,6 +357,7 @@ setInterval(function(){
     drawAmmo();
     drawSpec();
   }
+  drawClassChange();
 
   if(Player.list[selfId].isDead){
     ctx.fillStyle = '#00000030';
@@ -410,8 +431,6 @@ let drawSpec = function() {
   let EPercentX = x + maxSpecEBarSize/2 - ctx.measureText(EPercentText).width/2;
   ctx.fillStyle = '#000000';
   ctx.fillText(EPercentText, EPercentX, y + 10);
-
-
 };
 
 let drawAmmo = function () {
@@ -798,3 +817,44 @@ document.onmousemove = function(event){
   let angle = Math.atan2(y,x) / Math.PI * 180;
   socket.emit('keyPress', {inputId: 'mouseAngle', state: angle});
 };
+
+let classChangeOpacity = 0;
+let classChangeText = "";
+
+let drawClassChange = function () {
+  if (classChangeOpacity-- > 0) {
+    let opacity;
+    if (classChangeOpacity > 255) {
+      opacity = 'FF';
+    } else {
+      opacity = classChangeOpacity.toString(16);
+    }
+    if (opacity.length < 2) {
+      opacity = 0 + opacity;
+    }
+
+    ctx.font = "16px Arial";
+    let x = WIDTH / 2 - ctx.measureText(classChangeText).width / 2;
+    let y = HEIGHT - 100;
+    ctx.fillStyle = "#303030" + opacity;
+    ctx.fillText(classChangeText, x, y);
+    ctx.font = "10px Arial";
+  }
+};
+
+let assaultButtonClick = function () {
+  classChangeOpacity = 255;
+  classChangeText = "Next round you'll respawn as Assault";
+  socket.emit('changeClass', 'assault');
+};
+let shotgunButtonClick = function () {
+  classChangeOpacity = 255;
+  classChangeText = "Next round you'll respawn as Shotgun";
+  socket.emit('changeClass', 'shotgun');
+};
+let minigunButtonClick = function () {
+  classChangeOpacity = 255;
+  classChangeText = "Next round you'll respawn as Minigun";
+  socket.emit('changeClass', 'minigun');
+};
+

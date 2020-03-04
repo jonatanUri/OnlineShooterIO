@@ -483,6 +483,8 @@ let Player = function(id){
   self.acceleration =   0.2;
   self.maxAmmo =        30;
   self.ammo =           30;
+  self.bulletDamage =   40;
+  self.bulletSize =     5;
   self.reloadTimer =    0;
   self.reloadTime =     1000 / 10;
   self.isReloading =    false;
@@ -495,30 +497,33 @@ let Player = function(id){
   self.isInteracting =  false;
   self.interactTimer =  0;
   self.timeToInteract = 1000 / 40 * 6;
+  self.changeClassTo =  "";
+  self.isInvisible = false;
 
   let super_update = self.update;
   self.update = function () {
     self.updateSpeed();
     super_update();
     if(!self.isDead){
+      self.handleOutsideMap();
       self.handleWallCollision();
       self.updateCanInteract();
       self.updateInteracting();
 
       self.attackTimer++;
       if (self.pressingAttack &&
-          self.attackTimer >= self.attackRate &&
-          !self.isInteracting &&
-          !self.isReloading &&
-          self.ammo > 0){
-        /*  ---- "SHOTGUN" ----
-        for (let i = -3; i < 3; i++){
-          self.shootBullet(i*10 + self.mouseAngle)
-        }
-        */
-        self.shootBullet(self.mouseAngle + Math.random() * self.recoil - self.recoil/2);
-        self.attackTimer = 0;
-        self.ammo--;
+        self.attackTimer >= self.attackRate &&
+        !self.isInteracting &&
+        !self.isReloading &&
+        self.ammo > 0){
+          if (self.nextAttack){
+            self.nextAttack();
+            self.nextAttack = undefined;
+          } else {
+            self.shoot();
+          }
+          self.attackTimer = 0;
+          self.ammo--;
       }
       if (self.pressingReload && self.ammo < self.maxAmmo && !self.isInteracting){
         self.isReloading = true
@@ -544,14 +549,166 @@ let Player = function(id){
         self.specETimer = 0;
         self.specE();
       }
+      if (self.specQDurationTimer !== undefined){
+        if (self.specQDurationTimer++ > self.specQDuration){
+          self.specQDisable();
+        }
+      }
+      if (self.specEDurationTimer !== undefined){
+        if (self.specEDurationTimer++ > self.specEDuration){
+          self.specEDisable();
+        }
+      }
     }
   };
 
-  self.specQ = function(){
-
+  self.specQ = function () {
+    if(self.hp < self.hpMax){
+      self.hp += 20;
+    }
+    if(self.hp > self.hpMax){
+      self.hp = self.hpMax;
+    }
   };
-  self.specE = function(){
+  self.specE = function () {
+    var flashDistance = 100;
+    self.x += Math.cos(self.mouseAngle/180*Math.PI) * flashDistance;
+    self.y += Math.sin(self.mouseAngle/180*Math.PI) * flashDistance;
+  };
 
+  self.handleClassChange = function(){
+    switch (self.changeClassTo) {
+      case "":
+        break;
+      case 'assault':
+        self.becomeAssault();
+        break;
+      case 'shotgun':
+        self.becomeShotgun();
+        break;
+      case 'minigun':
+        self.becomeMinigun();
+        break;
+    }
+  };
+
+  self.becomeAssault = function(){
+    self.recoil =           8;
+    self.maxAmmo =          30;
+    self.bulletDamage =     40;
+    self.bulletSize =       5;
+    self.maxSpeed =         3;
+    self.defaultMaxSpeed =  3;
+    self.sprintMaxSpeed =   6;
+    self.acceleration =     0.2;
+    self.attackRate =       1000 / 100;
+    self.reloadTime =       1000 / 10;
+    self.specQCD =          1000 / 40 * 12;
+    self.specECD =          1000 / 40 * 15;
+
+    self.shoot = function(){
+      self.shootBullet(self.mouseAngle + Math.random() * self.recoil - self.recoil/2);
+    };
+    self.specQ = function () {
+      if(self.hp < self.hpMax){
+        self.hp += 20;
+      }
+      if(self.hp > self.hpMax){
+        self.hp = self.hpMax;
+      }
+    };
+    self.specE = function () {
+      var flashDistance = 100;
+      self.x += Math.cos(self.mouseAngle/180*Math.PI) * flashDistance;
+      self.y += Math.sin(self.mouseAngle/180*Math.PI) * flashDistance;
+    };
+  };
+
+  self.becomeShotgun = function(){
+    self.recoil =           15;
+    self.maxAmmo =          8;
+    self.bulletDamage =     30;
+    self.bulletSize =       4;
+    self.maxSpeed =         3;
+    self.defaultMaxSpeed =  3;
+    self.sprintMaxSpeed =   6;
+    self.acceleration =     0.2;
+    self.attackRate =       1000 / 70;
+    self.reloadTime =       1000 / 8;
+    self.specQCD =          1000 / 40 * 10;
+    self.specECD =          1000 / 40 * 7;
+    self.specQDuration =    1000 / 40 * 5;
+    self.specQDurationTimer = undefined;
+
+    self.shoot = function(){
+      for (let i = -3; i < 3; i++){
+        self.shootBullet(i*2 + self.mouseAngle + Math.random() * self.recoil - self.recoil/2)
+      }
+    };
+    self.specQ = function () {
+      self.specQEnable();
+    };
+
+    self.specQEnable = function (){
+      self.maxSpeed =         4.5;
+      self.defaultMaxSpeed =  4.5;
+      self.sprintMaxSpeed =   8;
+      self.acceleration =     0.5;
+      self.specQDurationTimer = 0;
+    };
+
+    self.specQDisable = function(){
+      self.maxSpeed =         3;
+      self.defaultMaxSpeed =  3;
+      self.sprintMaxSpeed =   6;
+      self.acceleration =     0.2;
+      self.specQDurationTimer = undefined;
+    };
+
+    self.specE = function () {
+      self.nextAttack = function () {
+        for (let i = -6; i < 6; i++){
+          self.shootBullet(i*2 + self.mouseAngle + Math.random() * self.recoil - self.recoil/2)
+        }
+      }
+    };
+  };
+
+  self.becomeMinigun = function(){
+    self.recoil =           15;
+    self.maxAmmo =          100;
+    self.bulletDamage =     20;
+    self.bulletSize =       3;
+    self.maxSpeed =         2;
+    self.defaultMaxSpeed =  2;
+    self.sprintMaxSpeed =   4;
+    self.acceleration =     0.1;
+    self.attackRate =       1000 / 500;
+    self.reloadTime =       1000 / 4;
+    self.specQCD =          1000 / 40 * 25;
+    self.specECD =          1000 / 40 * 20;
+    self.specQDuration =    1000 / 40 * 10;
+
+    self.shoot = function(){
+      self.shootBullet(self.mouseAngle + Math.random() * self.recoil - self.recoil/2);
+    };
+
+    self.specQ = function () {
+      self.specQEnable();
+    };
+    self.specE = function () {
+      self.ammo = self.maxAmmo;
+    };
+
+    self.specQEnable = function () {
+      self.isInvisible = true;
+      self.specQDurationTimer = 0;
+    };
+
+    self.specQDisable = function () {
+      self.isInvisible = false;
+      self.specQDurationTimer = undefined;
+    };
   };
 
   self.updateCanInteract = function(){
@@ -601,6 +758,10 @@ let Player = function(id){
     let bullet = Bullet(self.id, angle);
     bullet.x = self.x + self.width/2;
     bullet.y = self.y + self.height/2;
+  };
+
+  self.shoot = function(){
+    self.shootBullet(self.mouseAngle + Math.random() * self.recoil - self.recoil/2);
   };
 
   self.isCollidingWithAnyWalls = function() {
@@ -781,6 +942,21 @@ let Player = function(id){
     }
   };
 
+  self.handleOutsideMap = function (){
+    if (self.x < 0){
+      self.x = 0;
+    }
+    if (self.x > MAPWIDTH){
+      self.x = MAPWIDTH - 10;
+    }
+    if (self.y < 0){
+      self.y = 0;
+    }
+    if (self.y > MAPHEIGHT){
+      self.y = MAPHEIGHT - 10;
+    }
+  };
+
   self.getInitPack = function(){
     return {
       id:             self.id,
@@ -810,6 +986,7 @@ let Player = function(id){
       specQCD:        self.specQCD,
       specETimer:     self.specETimer,
       specECD:        self.specECD,
+      isInvisible:    self.isInvisible,
     }
   };
   self.getUpdatePack = function(){
@@ -831,12 +1008,15 @@ let Player = function(id){
       canInteract: self.canInteract,
       interactTimer: self.interactTimer,
       ammo:           self.ammo,
+      maxAmmo:        self.maxAmmo,
       reloadTimer:    self.reloadTimer,
+      reloadTime:     self.reloadTime,
       isReloading:    self.isReloading,
       specQTimer:     self.specQTimer,
       specQCD:        self.specQCD,
       specETimer:     self.specETimer,
       specECD:        self.specECD,
+      isInvisible:    self.isInvisible,
     }
   };
 
@@ -904,6 +1084,10 @@ Player.onConnect = function(socket) {
 
   socket.on('newName', function(data){
     player.name = data.substr(0,16);
+  });
+
+  socket.on('changeClass', function(data) {
+    player.changeClassTo = data;
   });
 
   socket.emit('init', {
@@ -1073,6 +1257,7 @@ let round = {
 
     teams.autoBalance();
     for (let i in Player.list){
+      Player.list[i].handleClassChange();
       Player.list[i].reSpawn();
     }
 
@@ -1085,9 +1270,9 @@ let Bullet = function(parent, angle){
   self.id =       Math.random();
   self.parent =   parent;
   self.maxSpeed = 8;
-  self.width =    5;
-  self.height =   5;
-  self.damage =   40;
+  self.width =    Player.list[parent].bulletSize;
+  self.height =   Player.list[parent].bulletSize;
+  self.damage =   Player.list[parent].bulletDamage;
   self.speedX =   Math.cos(angle/180*Math.PI) * self.maxSpeed;
   self.speedY =   Math.sin(angle/180*Math.PI) * self.maxSpeed;
 
