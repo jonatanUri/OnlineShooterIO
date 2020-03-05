@@ -382,20 +382,21 @@ createNewMap();
 
 let Bomb = function () {
   let self = Entity();
-
+  self.id = 'bomb';
+  self.name = 'Bomb';
+  self.team = 'attacker';
   self.width = 10;
   self.height = 10;
   self.defused = false;
   self.timer = 0;
   self.timeToExplode = 1000 / 40 * 40;
+  self.bulletSize = 3;
 
   self.explode = function() {
     for (let i = 0; i < 50; i++){
-      let bullet = Bullet('bomb', Math.random()*360);
+      let bullet = Bullet(self, Math.random()*360);
       bullet.x = self.x;
       bullet.y = self.y;
-      bullet.width -= 2;
-      bullet.height -= 2;
       bullet.damage = 40;
     }
     bomb = undefined;
@@ -755,7 +756,7 @@ let Player = function(id){
   };
 
   self.shootBullet = function(angle){
-    let bullet = Bullet(self.id, angle);
+    let bullet = Bullet(self, angle);
     bullet.x = self.x + self.width/2;
     bullet.y = self.y + self.height/2;
   };
@@ -1270,9 +1271,9 @@ let Bullet = function(parent, angle){
   self.id =       Math.random();
   self.parent =   parent;
   self.maxSpeed = 8;
-  self.width =    Player.list[parent].bulletSize;
-  self.height =   Player.list[parent].bulletSize;
-  self.damage =   Player.list[parent].bulletDamage;
+  self.width =    parent.bulletSize;
+  self.height =   parent.bulletSize;
+  self.damage =   parent.bulletDamage;
   self.speedX =   Math.cos(angle/180*Math.PI) * self.maxSpeed;
   self.speedY =   Math.sin(angle/180*Math.PI) * self.maxSpeed;
 
@@ -1304,11 +1305,11 @@ let Bullet = function(parent, angle){
       let player = Player.list[i];
       if (!player.isDead){
         if(self.isCollidingWithRect(player)){
-          let shooter = Player.list[self.parent];
+          let shooter = self.parent;
           let isOpponent = false;
           if (shooter === player){
             isOpponent = false;
-          }else if(self.friendlyFire || self.parent === 'bomb'){
+          }else if(self.friendlyFire || self.parent.id === 'bomb'){
             isOpponent = true;
           }else if(shooter.team !== player.team){
             isOpponent = true;
