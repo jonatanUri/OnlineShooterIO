@@ -131,12 +131,33 @@ let Bullet = function(initPack){
   self.width = initPack.width;
   self.height = initPack.height;
 
-  self.draw = function(){
-    let x = self.x - Player.list[selfId].x + WIDTH/2;
-    let y = self.y - Player.list[selfId].y + HEIGHT/2;
-    ctx.fillStyle = "#000000";
-    ctx.fillRect(x, y, self.width, self.height);
-  };
+  if (initPack.opacity !== undefined){
+    self.opacity = initPack.opacity;
+    self.draw = function () {
+      if (self.opacity > 0){
+        let x = self.x - Player.list[selfId].x + WIDTH/2;
+        let y = self.y - Player.list[selfId].y + HEIGHT/2;
+        let opacity;
+        if (self.opacity > 255){
+          opacity = 'FF';
+        } else {
+          opacity = self.opacity.toString(16);
+        }
+        if (opacity.length < 2){
+          opacity = 0 + opacity;
+        }
+        ctx.fillStyle = "#CC0000" + opacity;
+        ctx.fillRect(x, y, self.width, self.height);
+      }
+    }
+  } else {
+    self.draw = function(){
+      let x = self.x - Player.list[selfId].x + WIDTH/2;
+      let y = self.y - Player.list[selfId].y + HEIGHT/2;
+      ctx.fillStyle = "#000000";
+      ctx.fillRect(x, y, self.width, self.height);
+    };
+  }
 
   Bullet.list[self.id] = self;
   return self;
@@ -292,6 +313,9 @@ socket.on("update", function(data){
       }
       if(packet.height !== undefined){
         bullet.height = packet.height;
+      }
+      if(packet.opacity !== undefined){
+        bullet.opacity = packet.opacity;
       }
     }
   }
@@ -856,5 +880,10 @@ let minigunButtonClick = function () {
   classChangeOpacity = 255;
   classChangeText = "Next round you'll respawn as Minigun";
   socket.emit('changeClass', 'minigun');
+};
+let sniperButtonClick = function () {
+  classChangeOpacity = 255;
+  classChangeText = "Next round you'll respawn as Sniper";
+  socket.emit('changeClass', 'sniper');
 };
 
