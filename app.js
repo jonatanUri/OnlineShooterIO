@@ -787,6 +787,8 @@ let Player = function(id){
     };
     self.specE = function () {
       self.ammo = self.maxAmmo;
+      self.isReloading = false;
+      self.reloadTimer = 0;
     };
 
     self.specQEnable = function () {
