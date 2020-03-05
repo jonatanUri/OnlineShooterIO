@@ -25,6 +25,75 @@ let defenderScore = 0;
 
 let bomb = undefined;
 
+let DebrisParticle = function(){
+  let self = {
+    id: Math.random(),
+    x: 0,
+    y: 0,
+    width: 2,
+    height: 2,
+    maxSpeed: 3,
+  };
+  self.speedX = Math.cos(Math.random() * 2 * Math.PI) * self.maxSpeed;
+  self.speedY = Math.sin(Math.random() * 2 * Math.PI) * self.maxSpeed;
+  self.toRemove = false;
+  self.decreaseSpeed = 1.1;
+  self.opacity = 150;
+
+  self.isCollidingWithRect = function(rect){
+    return (self.x < rect.x + rect.width &&
+        self.x + self.width > rect.x &&
+        self.y < rect.y + rect.height &&
+        self.y + self.height > rect.y)
+  };
+
+  self.isCollidingWithAnything = function() {
+    for(let i in Wall.list){
+      if(self.isCollidingWithRect(Wall.list[i])){
+        return true;
+      }
+    }
+    for(let i in Player.list){
+      if(self.isCollidingWithRect(Player.list[i])){
+        return true;
+      }
+    }
+    return false;
+  };
+
+  self.draw = function () {
+    let x = self.x - Player.list[selfId].x + WIDTH / 2;
+    let y = self.y - Player.list[selfId].y + HEIGHT / 2;
+    let opacity;
+    if (self.opacity > 255) {
+      opacity = 'FF';
+    } else {
+      opacity = self.opacity.toString(16);
+    }
+    if (opacity.length < 2) {
+      opacity = 0 + opacity;
+    }
+    ctx.fillStyle = "#303030" + opacity;
+    ctx.fillRect(x, y, self.width, self.height);
+  };
+
+  self.update = function () {
+    self.speedX /= self.decreaseSpeed;
+    self.speedY /= self.decreaseSpeed;
+    self.x += self.speedX;
+    self.y += self.speedY;
+
+    self.opacity -= 3;
+    if(self.opacity <= 0 || self.isCollidingWithAnything()){
+      delete DebrisParticle.list[self.id];
+    }
+  };
+
+  DebrisParticle.list[self.id] = self;
+  return self;
+};
+DebrisParticle.list = {};
+
 let Player = function(initPack){
   let self = {};
   self.id =         initPack.id;
@@ -335,6 +404,11 @@ socket.on('remove', function(data) {
     delete Player.list[data.player[i]];
   }
   for (let i = 0; i < data.bullet.length; i++) {
+    for (let j = 0; j < 10; j++){
+      let particle = new DebrisParticle();
+      particle.x = Bullet.list[data.bullet[i]].x;
+      particle.y = Bullet.list[data.bullet[i]].y;
+    }
     delete Bullet.list[data.bullet[i]];
   }
   for (let i = 0; i < data.wall.length; i++){
@@ -366,6 +440,12 @@ setInterval(function(){
   }
   for(let i in Bullet.list){
     Bullet.list[i].draw();
+  }
+  for(let i in DebrisParticle.list){
+    DebrisParticle.list[i].update();
+  }
+  for(let i in DebrisParticle.list){
+    DebrisParticle.list[i].draw();
   }
 
   drawTeamScore();
