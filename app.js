@@ -498,6 +498,7 @@ let Player = function(id){
   self.isInteracting =  false;
   self.interactTimer =  0;
   self.timeToInteract = 1000 / 40 * 6;
+  self.class =          "assault";
   self.changeClassTo =  "";
   self.isInvisible = false;
 
@@ -606,6 +607,7 @@ let Player = function(id){
     self.reloadTime =       1000 / 10;
     self.specQCD =          1000 / 40 * 12;
     self.specECD =          1000 / 40 * 15;
+    self.class =            "assault";
 
     self.shoot = function(){
       self.shootBullet(self.mouseAngle + Math.random() * self.recoil - self.recoil/2);
@@ -628,7 +630,7 @@ let Player = function(id){
   self.becomeShotgun = function(){
     self.recoil =           15;
     self.maxAmmo =          8;
-    self.bulletDamage =     30;
+    self.bulletDamage =     20;
     self.bulletSize =       4;
     self.maxSpeed =         3;
     self.defaultMaxSpeed =  3;
@@ -640,6 +642,7 @@ let Player = function(id){
     self.specECD =          1000 / 40 * 7;
     self.specQDuration =    1000 / 40 * 5;
     self.specQDurationTimer = undefined;
+    self.class =            "shotgun";
 
     self.shoot = function(){
       for (let i = -3; i < 3; i++){
@@ -651,10 +654,10 @@ let Player = function(id){
     };
 
     self.specQEnable = function (){
-      self.maxSpeed =         4.5;
-      self.defaultMaxSpeed =  4.5;
-      self.sprintMaxSpeed =   8;
-      self.acceleration =     0.5;
+      self.maxSpeed =         5;
+      self.defaultMaxSpeed =  5;
+      self.sprintMaxSpeed =   7;
+      self.acceleration =     0.8;
       self.specQDurationTimer = 0;
     };
 
@@ -680,15 +683,16 @@ let Player = function(id){
     self.maxAmmo =          100;
     self.bulletDamage =     20;
     self.bulletSize =       3;
-    self.maxSpeed =         2;
-    self.defaultMaxSpeed =  2;
-    self.sprintMaxSpeed =   4;
+    self.maxSpeed =         2.5;
+    self.defaultMaxSpeed =  2.5;
+    self.sprintMaxSpeed =   5;
     self.acceleration =     0.1;
     self.attackRate =       1000 / 500;
     self.reloadTime =       1000 / 4;
     self.specQCD =          1000 / 40 * 25;
     self.specECD =          1000 / 40 * 20;
     self.specQDuration =    1000 / 40 * 10;
+    self.class =            "minigun";
 
     self.shoot = function(){
       self.shootBullet(self.mouseAngle + Math.random() * self.recoil - self.recoil/2);
@@ -1281,6 +1285,13 @@ let Bullet = function(parent, angle){
   self.maxTime =  200;
   self.toRemove = false;
 
+  self.decreaseSpeed = 1.005;
+  self.decreaseDamage = 1.010;
+  if(parent.class === 'shotgun'){
+    self.decreaseSpeed *= 1.007;
+    self.decreaseDamage *= 1.01;
+  }
+
   self.friendlyFire = false;
 
   let super_update = self.update;
@@ -1290,9 +1301,9 @@ let Bullet = function(parent, angle){
     }
     super_update();
 
-    self.speedX /= 1.005;
-    self.speedY /= 1.005;
-    self.damage /= 1.015;
+    self.speedX /= self.decreaseSpeed;
+    self.speedY /= self.decreaseSpeed;
+    self.damage /= self.decreaseDamage;
 
     for (let i in Wall.list) {
       let wall = Wall.list[i];
