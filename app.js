@@ -453,9 +453,7 @@ let Mine = function(parent){
     }
   };
 
-  Bullet.list[self.id] = self;
   initPack.bullet.push(self.getInitPack());
-  return self;
 };
 
 let Bomb = function () {
