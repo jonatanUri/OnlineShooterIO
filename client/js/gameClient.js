@@ -844,6 +844,7 @@ document.onmousemove = function(event){
 
 let classChangeOpacity = 0;
 let classChangeText = "";
+let classSpecText = "";
 
 let drawClassChange = function () {
   if (classChangeOpacity-- > 0) {
@@ -862,6 +863,8 @@ let drawClassChange = function () {
     let y = HEIGHT - 100;
     ctx.fillStyle = "#303030" + opacity;
     ctx.fillText(classChangeText, x, y);
+    ctx.font = "12px Arial";
+    ctx.fillText(classSpecText, x, y + 15);
     ctx.font = "10px Arial";
   }
 };
@@ -869,21 +872,25 @@ let drawClassChange = function () {
 let assaultButtonClick = function () {
   classChangeOpacity = 255;
   classChangeText = "Next round you'll respawn as Assault";
+  classSpecText = "Q: Restores 20 HP     E: Flash a small distance towards mouse";
   socket.emit('changeClass', 'assault');
 };
 let shotgunButtonClick = function () {
   classChangeOpacity = 255;
   classChangeText = "Next round you'll respawn as Shotgun";
+  classSpecText = "Q: Increase speed    E: Next shot shoot more pellets";
   socket.emit('changeClass', 'shotgun');
 };
 let minigunButtonClick = function () {
   classChangeOpacity = 255;
   classChangeText = "Next round you'll respawn as Minigun";
+  classSpecText = "Q: Becomes invisible     E: Instant reload";
   socket.emit('changeClass', 'minigun');
 };
 let sniperButtonClick = function () {
   classChangeOpacity = 255;
   classChangeText = "Next round you'll respawn as Sniper";
+  classSpecText = "Q: Increase fire rate     E: Plants a mine";
   socket.emit('changeClass', 'sniper');
 };
 
