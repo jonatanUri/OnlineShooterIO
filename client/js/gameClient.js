@@ -179,6 +179,19 @@ let Wall = function (initPack) {
   self.width =  initPack.width;
   self.height = initPack.height;
 
+  self.topLeftPoint = {x: self.x, y: self.y, nextPoint: function () {
+      return self.topRightPoint;
+    }};
+  self.topRightPoint = {x: self.x + self.width, y: self.y, nextPoint: function () {
+      return self.bottomRightPoint;
+    }};
+  self.bottomLeftPoint = {x: self.x, y: self.y + self.height, nextPoint: function () {
+      return self.topLeftPoint;
+    }};
+  self.bottomRightPoint = {x: self.x + self.width, y: self.y + self.height, nextPoint: function () {
+      return self.bottomLeftPoint;
+    }};
+
   self.draw = function () {
     let x = self.x - Player.list[selfId].x + WIDTH/2;
     let y = self.y - Player.list[selfId].y + HEIGHT/2;
@@ -429,12 +442,7 @@ setInterval(function(){
     return;
   ctx.clearRect(0, 0, WIDTH, HEIGHT);
   drawAreas();
-  drawScore();
-  drawPosition();
 
-  for(let i in Wall.list){
-    Wall.list[i].draw();
-  }
   for(let i in Player.list){
     Player.list[i].draw();
   }
@@ -447,13 +455,19 @@ setInterval(function(){
   for(let i in DebrisParticle.list){
     DebrisParticle.list[i].draw();
   }
+  drawBomb();
+  drawWallShadow();
+  for(let i in Wall.list){
+    Wall.list[i].draw();
+  }
 
+  drawScore();
+  drawPosition();
   drawTeamScore();
   drawAlivePlayerCount();
   drawRoundTime();
   drawKillFeed();
   drawWinText();
-  drawBomb();
   if (!Player.list[selfId].isDead){
     drawInteract();
     drawHp();
@@ -476,6 +490,43 @@ setInterval(function(){
   }
 
 }, 1000/45);
+
+let drawWallShadow = function(){
+  for (let i in Wall.list){
+    let wall = Wall.list[i];
+    let point = wall.topLeftPoint;
+
+    let x = point.x - Player.list[selfId].x - Player.list[selfId].width/2;
+    let y = point.y - Player.list[selfId].y - Player.list[selfId].height/2;
+    let angle = Math.atan2(y,x) / Math.PI * 180;
+    let lineEndPoint = {
+      x: point.x + Math.cos(angle/180*Math.PI) * 300,
+      y: point.y + Math.sin(angle/180*Math.PI) * 300,
+    };
+
+    for (let i = 0; i < 4; i++){
+
+      ctx.beginPath();
+      ctx.moveTo(point.x - Player.list[selfId].x + WIDTH/2, point.y - Player.list[selfId].y + HEIGHT/2);
+      ctx.lineTo(lineEndPoint.x  - Player.list[selfId].x + WIDTH/2, lineEndPoint.y - Player.list[selfId].y + HEIGHT/2);
+
+      point = point.nextPoint();
+      x = point.x - Player.list[selfId].x - Player.list[selfId].width/2;
+      y = point.y - Player.list[selfId].y - Player.list[selfId].height/2;
+      angle = Math.atan2(y,x) / Math.PI * 180;
+      lineEndPoint = {
+        x: point.x + Math.cos(angle/180*Math.PI) * 20000,
+        y: point.y + Math.sin(angle/180*Math.PI) * 20000,
+      };
+      ctx.lineTo(lineEndPoint.x  - Player.list[selfId].x + WIDTH/2, lineEndPoint.y - Player.list[selfId].y + HEIGHT/2);
+      ctx.lineTo(point.x  - Player.list[selfId].x + WIDTH/2, point.y - Player.list[selfId].y + HEIGHT/2);
+
+      ctx.closePath();
+      ctx.fillStyle = '#606060';
+      ctx.fill();
+    }
+  }
+};
 
 let drawSpec = function() {
   let player = Player.list[selfId];
