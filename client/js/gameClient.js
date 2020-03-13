@@ -25,6 +25,75 @@ let defenderScore = 0;
 
 let bomb = undefined;
 
+let DebrisParticle = function(){
+  let self = {
+    id: Math.random(),
+    x: 0,
+    y: 0,
+    width: 2,
+    height: 2,
+    maxSpeed: 3,
+  };
+  self.speedX = Math.cos(Math.random() * 2 * Math.PI) * self.maxSpeed;
+  self.speedY = Math.sin(Math.random() * 2 * Math.PI) * self.maxSpeed;
+  self.toRemove = false;
+  self.decreaseSpeed = 1.1;
+  self.opacity = 150;
+
+  self.isCollidingWithRect = function(rect){
+    return (self.x < rect.x + rect.width &&
+        self.x + self.width > rect.x &&
+        self.y < rect.y + rect.height &&
+        self.y + self.height > rect.y)
+  };
+
+  self.isCollidingWithAnything = function() {
+    for(let i in Wall.list){
+      if(self.isCollidingWithRect(Wall.list[i])){
+        return true;
+      }
+    }
+    for(let i in Player.list){
+      if(self.isCollidingWithRect(Player.list[i])){
+        return true;
+      }
+    }
+    return false;
+  };
+
+  self.draw = function () {
+    let x = self.x - Player.list[selfId].x + WIDTH / 2;
+    let y = self.y - Player.list[selfId].y + HEIGHT / 2;
+    let opacity;
+    if (self.opacity > 255) {
+      opacity = 'FF';
+    } else {
+      opacity = self.opacity.toString(16);
+    }
+    if (opacity.length < 2) {
+      opacity = 0 + opacity;
+    }
+    ctx.fillStyle = "#303030" + opacity;
+    ctx.fillRect(x, y, self.width, self.height);
+  };
+
+  self.update = function () {
+    self.speedX /= self.decreaseSpeed;
+    self.speedY /= self.decreaseSpeed;
+    self.x += self.speedX;
+    self.y += self.speedY;
+
+    self.opacity -= 3;
+    if(self.opacity <= 0 || self.isCollidingWithAnything()){
+      delete DebrisParticle.list[self.id];
+    }
+  };
+
+  DebrisParticle.list[self.id] = self;
+  return self;
+};
+DebrisParticle.list = {};
+
 let Player = function(initPack){
   let self = {};
   self.id =         initPack.id;
@@ -51,6 +120,12 @@ let Player = function(initPack){
   self.reloadTimer =    initPack.reloadTimer;
   self.reloadTime =     initPack.reloadTime;
   self.isReloading =    initPack.isReloading;
+  self.specQTimer =     initPack.specQTimer;
+  self.specETimer =     initPack.specETimer;
+  self.specQCD =        initPack.specQCD;
+  self.specECD =        initPack.specECD;
+  self.isInvisible =    initPack.isInvisible;
+
 
   self.draw = function(){
     if(!self.isDead){
@@ -60,22 +135,32 @@ let Player = function(initPack){
       let barWidth = 30;
 
       let hpWidth = barWidth * self.hp / self.hpMax;
-      ctx.fillStyle = '#222222A0';
+
+      var opacity = 'FF';
+      if (self.isInvisible){
+        if(self.team === Player.list[selfId].team){
+          opacity = '77';
+        } else {
+          opacity = '00';
+        }
+      }
+
+      ctx.fillStyle = '#222222' + opacity;
       ctx.fillRect(x - barWidth/2 + self.width/2, y - 10, barWidth, 4);
 
       if (self.team !== Player.list[selfId].team){
-        ctx.fillStyle = '#FF3622C0';
+        ctx.fillStyle = '#FF3622' + opacity;
       } else {
-        ctx.fillStyle = '#23C216C0'
+        ctx.fillStyle = '#23C216' + opacity;
       }
       ctx.fillRect(x - barWidth/2 + self.width/2, y - 10, hpWidth, 4);
-      ctx.fillStyle = '#000000';
+      ctx.fillStyle = '#000000' + opacity;
       ctx.fillText(self.name, x - ctx.measureText(self.name).width/2 + self.width/2, y - 15);
 
       if (self.team === 'attacker'){
-        ctx.fillStyle = '#ed5f2b';
+        ctx.fillStyle = '#ed5f2b' + opacity;
       } else {
-        ctx.fillStyle = '#3694c7';
+        ctx.fillStyle = '#3694c7' + opacity;
       }
       ctx.fillRect(x, y, self.width, self.height);
     }
@@ -93,6 +178,19 @@ let Wall = function (initPack) {
   self.y =      initPack.y;
   self.width =  initPack.width;
   self.height = initPack.height;
+
+  self.topLeftPoint = {x: self.x, y: self.y, nextPoint: function () {
+      return self.topRightPoint;
+    }};
+  self.topRightPoint = {x: self.x + self.width, y: self.y, nextPoint: function () {
+      return self.bottomRightPoint;
+    }};
+  self.bottomLeftPoint = {x: self.x, y: self.y + self.height, nextPoint: function () {
+      return self.topLeftPoint;
+    }};
+  self.bottomRightPoint = {x: self.x + self.width, y: self.y + self.height, nextPoint: function () {
+      return self.bottomLeftPoint;
+    }};
 
   self.draw = function () {
     let x = self.x - Player.list[selfId].x + WIDTH/2;
@@ -115,12 +213,33 @@ let Bullet = function(initPack){
   self.width = initPack.width;
   self.height = initPack.height;
 
-  self.draw = function(){
-    let x = self.x - Player.list[selfId].x + WIDTH/2;
-    let y = self.y - Player.list[selfId].y + HEIGHT/2;
-    ctx.fillStyle = "#000000";
-    ctx.fillRect(x, y, self.width, self.height);
-  };
+  if (initPack.opacity !== undefined){
+    self.opacity = initPack.opacity;
+    self.draw = function () {
+      if (self.opacity > 0){
+        let x = self.x - Player.list[selfId].x + WIDTH/2;
+        let y = self.y - Player.list[selfId].y + HEIGHT/2;
+        let opacity;
+        if (self.opacity > 255){
+          opacity = 'FF';
+        } else {
+          opacity = self.opacity.toString(16);
+        }
+        if (opacity.length < 2){
+          opacity = 0 + opacity;
+        }
+        ctx.fillStyle = "#CC0000" + opacity;
+        ctx.fillRect(x, y, self.width, self.height);
+      }
+    }
+  } else {
+    self.draw = function(){
+      let x = self.x - Player.list[selfId].x + WIDTH/2;
+      let y = self.y - Player.list[selfId].y + HEIGHT/2;
+      ctx.fillStyle = "#000000";
+      ctx.fillRect(x, y, self.width, self.height);
+    };
+  }
 
   Bullet.list[self.id] = self;
   return self;
@@ -232,11 +351,32 @@ socket.on("update", function(data){
       if(packet.ammo !== undefined){
         player.ammo = packet.ammo;
       }
+      if(packet.maxAmmo !== undefined){
+        player.maxAmmo = packet.maxAmmo;
+      }
+      if(packet.reloadTime !== undefined){
+        player.reloadTime = packet.reloadTime;
+      }
       if(packet.reloadTimer !== undefined){
         player.reloadTimer = packet.reloadTimer;
       }
       if(packet.isReloading !== undefined){
         player.isReloading = packet.isReloading;
+      }
+      if(packet.specQTimer !== undefined){
+        player.specQTimer = packet.specQTimer;
+      }
+      if(packet.specETimer !== undefined){
+        player.specETimer = packet.specETimer;
+      }
+      if(packet.specQCD !== undefined){
+        player.specQCD = packet.specQCD;
+      }
+      if(packet.specECD !== undefined){
+        player.specECD = packet.specECD;
+      }
+      if(packet.isInvisible !== undefined){
+        player.isInvisible = packet.isInvisible;
       }
     }
   }
@@ -256,6 +396,9 @@ socket.on("update", function(data){
       if(packet.height !== undefined){
         bullet.height = packet.height;
       }
+      if(packet.opacity !== undefined){
+        bullet.opacity = packet.opacity;
+      }
     }
   }
 
@@ -274,6 +417,11 @@ socket.on('remove', function(data) {
     delete Player.list[data.player[i]];
   }
   for (let i = 0; i < data.bullet.length; i++) {
+    for (let j = 0; j < 10; j++){
+      let particle = new DebrisParticle();
+      particle.x = Bullet.list[data.bullet[i]].x;
+      particle.y = Bullet.list[data.bullet[i]].y;
+    }
     delete Bullet.list[data.bullet[i]];
   }
   for (let i = 0; i < data.wall.length; i++){
@@ -294,31 +442,40 @@ setInterval(function(){
     return;
   ctx.clearRect(0, 0, WIDTH, HEIGHT);
   drawAreas();
-  drawScore();
-  drawPosition();
 
-  for(let i in Wall.list){
-    Wall.list[i].draw();
-  }
   for(let i in Player.list){
     Player.list[i].draw();
   }
   for(let i in Bullet.list){
     Bullet.list[i].draw();
   }
+  for(let i in DebrisParticle.list){
+    DebrisParticle.list[i].update();
+  }
+  for(let i in DebrisParticle.list){
+    DebrisParticle.list[i].draw();
+  }
+  drawBomb();
+  drawWallShadow();
+  for(let i in Wall.list){
+    Wall.list[i].draw();
+  }
 
+  drawScore();
+  drawPosition();
   drawTeamScore();
   drawAlivePlayerCount();
   drawRoundTime();
   drawKillFeed();
   drawWinText();
-  drawBomb();
   if (!Player.list[selfId].isDead){
     drawInteract();
     drawHp();
     drawStamina();
     drawAmmo();
+    drawSpec();
   }
+  drawClassChange();
 
   if(Player.list[selfId].isDead){
     ctx.fillStyle = '#00000030';
@@ -334,8 +491,105 @@ setInterval(function(){
 
 }, 1000/45);
 
+let drawWallShadow = function(){
+  for (let i in Wall.list){
+    let wall = Wall.list[i];
+    let point = wall.topLeftPoint;
+
+    let x = point.x - Player.list[selfId].x - Player.list[selfId].width/2;
+    let y = point.y - Player.list[selfId].y - Player.list[selfId].height/2;
+    let angle = Math.atan2(y,x) / Math.PI * 180;
+    let lineEndPoint = {
+      x: point.x + Math.cos(angle/180*Math.PI) * 300,
+      y: point.y + Math.sin(angle/180*Math.PI) * 300,
+    };
+
+    for (let i = 0; i < 4; i++){
+
+      ctx.beginPath();
+      ctx.moveTo(point.x - Player.list[selfId].x + WIDTH/2, point.y - Player.list[selfId].y + HEIGHT/2);
+      ctx.lineTo(lineEndPoint.x  - Player.list[selfId].x + WIDTH/2, lineEndPoint.y - Player.list[selfId].y + HEIGHT/2);
+
+      point = point.nextPoint();
+      x = point.x - Player.list[selfId].x - Player.list[selfId].width/2;
+      y = point.y - Player.list[selfId].y - Player.list[selfId].height/2;
+      angle = Math.atan2(y,x) / Math.PI * 180;
+      lineEndPoint = {
+        x: point.x + Math.cos(angle/180*Math.PI) * 20000,
+        y: point.y + Math.sin(angle/180*Math.PI) * 20000,
+      };
+      ctx.lineTo(lineEndPoint.x  - Player.list[selfId].x + WIDTH/2, lineEndPoint.y - Player.list[selfId].y + HEIGHT/2);
+      ctx.lineTo(point.x  - Player.list[selfId].x + WIDTH/2, point.y - Player.list[selfId].y + HEIGHT/2);
+
+      ctx.closePath();
+      ctx.fillStyle = '#606060';
+      ctx.fill();
+    }
+  }
+};
+
+let drawSpec = function() {
+  let player = Player.list[selfId];
+  let fullSpecBarSize = 100;
+  let maxSpecQBarSize = fullSpecBarSize / 2;
+  let maxSpecEBarSize = fullSpecBarSize / 2;
+  let specBarHeight = 12;
+  let specQBarSize = 0;
+  let specEBarSize = 0;
+
+  let x = WIDTH/2 - fullSpecBarSize / 2 + player.width/2;
+  let y = HEIGHT - 72;
+
+  ctx.fillStyle = '#30303030';
+  ctx.fillRect(x, y, fullSpecBarSize, specBarHeight);
+
+  if (player.specQTimer < player.specQCD){
+    specQBarSize = player.specQTimer / player.specQCD * maxSpecQBarSize;
+    ctx.fillStyle = '#E05050AA';
+    ctx.fillRect(x, y, specQBarSize, specBarHeight);
+  } else {
+    ctx.fillStyle = '#50E050DD';
+    ctx.fillRect(x, y, maxSpecQBarSize, specBarHeight);
+  }
+  let QPercent = Math.floor(player.specQTimer / player.specQCD * 100);
+  let QSpace = "";
+  if (QPercent < 100){
+    QSpace += " ";
+    if(QPercent < 10){
+      QSpace += " ";
+    }
+  }
+  let QPercentText = 'Q: ' + QSpace + QPercent + '%';
+  let QPercentX = x + maxSpecQBarSize/2 - ctx.measureText(QPercentText).width/2;
+  ctx.fillStyle = '#000000';
+  ctx.fillText(QPercentText, QPercentX, y + 10);
+  x += maxSpecQBarSize;
+
+  if (player.specETimer < player.specECD){
+
+    specEBarSize = player.specETimer / player.specECD * maxSpecEBarSize;
+    ctx.fillStyle = '#E05050AA';
+    ctx.fillRect(x, y, specEBarSize, specBarHeight);
+  } else {
+    ctx.fillStyle = '#50E050DD';
+    ctx.fillRect(x, y, maxSpecEBarSize, specBarHeight);
+  }
+  let EPercent = Math.floor(player.specETimer / player.specECD * 100);
+  let ESpace = "";
+  if (EPercent < 100){
+    ESpace += " ";
+    if(EPercent < 10){
+      ESpace += " ";
+    }
+  }
+  let EPercentText = 'E: ' + ESpace + EPercent + '%';
+  let EPercentX = x + maxSpecEBarSize/2 - ctx.measureText(EPercentText).width/2;
+  ctx.fillStyle = '#000000';
+  ctx.fillText(EPercentText, EPercentX, y + 10);
+};
+
 let drawAmmo = function () {
-  let maxAmmoBarSize = 80;
+  let maxAmmoBarSize = 100;
   let ammoBarHeight = 12;
   let ammoBarSize = 0;
   let x = WIDTH/2 - maxAmmoBarSize/2 + Player.list[selfId].width/2;
@@ -666,6 +920,12 @@ document.onkeydown = function(event){
   else if(event.keyCode === 82){ //R
     socket.emit('keyPress', {inputId: 'reload', state: true});
   }
+  else if(event.keyCode === 81){ //Q
+    socket.emit('keyPress', {inputId: 'specQ', state: true});
+  }
+  else if(event.keyCode === 69){ //E
+    socket.emit('keyPress', {inputId: 'specE', state: true});
+  }
 };
 document.onkeyup = function(event){
   if(event.keyCode === 68){ //D
@@ -693,6 +953,12 @@ document.onkeyup = function(event){
   else if(event.keyCode === 82){ //R
     socket.emit('keyPress', {inputId: 'reload', state: false});
   }
+  else if(event.keyCode === 81){ //Q
+    socket.emit('keyPress', {inputId: 'specQ', state: false});
+  }
+  else if(event.keyCode === 69){ //E
+    socket.emit('keyPress', {inputId: 'specE', state: false});
+  }
 };
 document.onmousedown = function(event){
   socket.emit('keyPress', {inputId: 'attack', state:true});
@@ -706,3 +972,56 @@ document.onmousemove = function(event){
   let angle = Math.atan2(y,x) / Math.PI * 180;
   socket.emit('keyPress', {inputId: 'mouseAngle', state: angle});
 };
+
+let classChangeOpacity = 0;
+let classChangeText = "";
+let classSpecText = "";
+
+let drawClassChange = function () {
+  if (classChangeOpacity-- > 0) {
+    let opacity;
+    if (classChangeOpacity > 255) {
+      opacity = 'FF';
+    } else {
+      opacity = classChangeOpacity.toString(16);
+    }
+    if (opacity.length < 2) {
+      opacity = 0 + opacity;
+    }
+
+    ctx.font = "16px Arial";
+    let x = WIDTH / 2 - ctx.measureText(classChangeText).width / 2;
+    let y = HEIGHT - 100;
+    ctx.fillStyle = "#303030" + opacity;
+    ctx.fillText(classChangeText, x, y);
+    ctx.font = "12px Arial";
+    ctx.fillText(classSpecText, x, y + 15);
+    ctx.font = "10px Arial";
+  }
+};
+
+let assaultButtonClick = function () {
+  classChangeOpacity = 255;
+  classChangeText = "Next round you'll respawn as Assault";
+  classSpecText = "Q: Restores 20 HP     E: Flash a small distance towards mouse";
+  socket.emit('changeClass', 'assault');
+};
+let shotgunButtonClick = function () {
+  classChangeOpacity = 255;
+  classChangeText = "Next round you'll respawn as Shotgun";
+  classSpecText = "Q: Increase speed    E: Next shot shoot more pellets";
+  socket.emit('changeClass', 'shotgun');
+};
+let minigunButtonClick = function () {
+  classChangeOpacity = 255;
+  classChangeText = "Next round you'll respawn as Minigun";
+  classSpecText = "Q: Becomes invisible     E: Instant reload";
+  socket.emit('changeClass', 'minigun');
+};
+let sniperButtonClick = function () {
+  classChangeOpacity = 255;
+  classChangeText = "Next round you'll respawn as Sniper";
+  classSpecText = "Q: Increase fire rate     E: Plants a mine";
+  socket.emit('changeClass', 'sniper');
+};
+
