@@ -11,11 +11,11 @@ app.get('/', function(req, res){
 app.use('/client', express.static(__dirname + '/client'));
 app.use('/client', express.static(__dirname + '/client/js'));
 app.use('/client', express.static(__dirname + '/client/audio'));
-serv.listen(2000);
+serv.listen(8000);
 
 (async () => {
-    console.log("Server runs on: " + await publicIp.v4() + ":2000 (public)");
-    console.log("Or: " + localIp.address() + ":2000 (local)")
+    console.log("Server runs on: " + await publicIp.v4() + ":8000 (public)");
+    console.log("Or: " + localIp.address() + ":8000 (local)")
 })();
 
 let SOCKET_LIST = {};
