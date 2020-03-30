@@ -214,7 +214,10 @@ let House = function () {
     self.height = self.heightMin + Math.random() * self.heightVariation;
     self.x = minDistanceXBorder + Math.random() * (MAPWIDTH - minDistanceXBorder * 2 - self.width);
     self.y = minDistanceYBorder + Math.random() * (MAPHEIGHT - minDistanceYBorder * 2 - self.height);
-  } while (self.isTooCloseToAnyHouse() && tryCount++ < 300);
+  } while (self.isTooCloseToAnyHouse() && tryCount++ < MAPHEIGHT/4);
+  if (tryCount >= MAPHEIGHT/4){
+    return;
+  }
 
   let numberOfDoors =  1 + Math.ceil(Math.random() * 3);
   let doorPos = {
