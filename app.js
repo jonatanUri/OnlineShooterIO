@@ -11,7 +11,7 @@ app.get('/', function(req, res){
 app.use('/client', express.static(__dirname + '/client'));
 app.use('/client', express.static(__dirname + '/client/js'));
 app.use('/client', express.static(__dirname + '/client/audio'));
-serv.listen(8000);
+serv.listen(2000);
 
 (async () => {
     console.log("Server runs on: " + await publicIp.v4() + ":8000 (public)");
@@ -1486,27 +1486,6 @@ let teams = {
 };
 
 
-
-let plantAreaA = {
-  x: 50 + MAPWIDTH / 2 + Math.random() * 500,
-  y: Math.random() * (MAPHEIGHT/2 - 250),
-  width: 200 + Math.random() * 50,
-  height: 200 + Math.random() * 50,
-};
-
-let plantAreaB = {
-  x: 50 + MAPWIDTH / 2 + Math.random() * 500,
-  y: Math.random() * (MAPHEIGHT/2 - 250) + MAPHEIGHT/2,
-  width: 200 + Math.random() * 50,
-  height: 200 + Math.random() * 50,
-};
-
-let areas = {
-  attacker: teams.attacker.spawnArea,
-  defender: teams.defender.spawnArea,
-  plantA: plantAreaA,
-  plantB: plantAreaB
-};
 
 let round = {
   maxTime: 120,
