@@ -11,19 +11,63 @@ app.get('/', function(req, res){
 app.use('/client', express.static(__dirname + '/client'));
 app.use('/client', express.static(__dirname + '/client/js'));
 app.use('/client', express.static(__dirname + '/client/audio'));
-serv.listen(2000);
+serv.listen(8000);
 
 (async () => {
-    console.log("Server runs on: " + await publicIp.v4() + ":2000 (public)");
-    console.log("Or: " + localIp.address() + ":2000 (local)")
+    console.log("Server runs on: " + await publicIp.v4() + ":8000 (public)");
+    console.log("Or: " + localIp.address() + ":8000 (local)")
 })();
 
 let SOCKET_LIST = {};
 
-let initPack = {player:[], bullet:[], wall:[], bomb: undefined};
+let initPack = {player:[], bullet:[], wall:[], bomb: undefined, areas:{}};
 let removePack = {player:[], bullet:[], wall:[]};
 let MAPWIDTH = 2000;
 let MAPHEIGHT = 1000;
+let playerCount = 0;
+
+let plantAreaA =  function () {
+  return {
+    x: 50 + MAPWIDTH / 2 + Math.random() * 500,
+    y: Math.random() * (MAPHEIGHT/2 - 250),
+    width: 200 + Math.random() * 50,
+    height: 200 + Math.random() * 50,
+  }
+};
+
+let plantAreaB = function () {
+  return {
+    x: 50 + MAPWIDTH / 2 + Math.random() * 500,
+    y: Math.random() * (MAPHEIGHT/2 - 250) + MAPHEIGHT/2,
+    width: 200 + Math.random() * 50,
+    height: 200 + Math.random() * 50,
+  }
+};
+
+let attackerSpawnArea = function () {
+  return{
+    x: 0,
+    y: 0,
+    width: 150,
+    height: MAPHEIGHT
+  }
+};
+
+let defenderSpawnArea = function () {
+  return {
+    x: MAPWIDTH - 150,
+    y: 0,
+    width: 150,
+    height: MAPHEIGHT
+  }
+};
+
+let areas = {
+  attacker: attackerSpawnArea(),
+  defender: defenderSpawnArea(),
+  plantA: plantAreaA(),
+  plantB: plantAreaB()
+};
 
 let Entity = function(){
   let self = {
@@ -164,12 +208,16 @@ let House = function () {
     return false;
   };
 
+  let tryCount = 0;
   do {
     self.width = self.widthMin + Math.random() * self.widthVariation;
     self.height = self.heightMin + Math.random() * self.heightVariation;
     self.x = minDistanceXBorder + Math.random() * (MAPWIDTH - minDistanceXBorder * 2 - self.width);
     self.y = minDistanceYBorder + Math.random() * (MAPHEIGHT - minDistanceYBorder * 2 - self.height);
-  } while (self.isTooCloseToAnyHouse());
+  } while (self.isTooCloseToAnyHouse() && tryCount++ < MAPHEIGHT/4);
+  if (tryCount >= MAPHEIGHT/4){
+    return;
+  }
 
   let numberOfDoors =  1 + Math.ceil(Math.random() * 3);
   let doorPos = {
@@ -360,6 +408,15 @@ let House = function () {
 House.list = {};
 
 let createNewMap = function () {
+  MAPWIDTH = 2000 + (playerCount * 100);
+  MAPHEIGHT = 1000 + (playerCount * 100);
+  areas = {
+    attacker: attackerSpawnArea(),
+    defender: defenderSpawnArea(),
+    plantA: plantAreaA(),
+    plantB: plantAreaB()
+  };
+  initPack.areas = areas;
   House.list = {};
   for (let id in Wall.list){
     delete Wall.list[id];
@@ -371,11 +428,9 @@ let createNewMap = function () {
   let leftWall = new Wall(topWall.startPoint, 10, MAPHEIGHT);
   let bottomWall = new Wall(leftWall.getEndPoint(), MAPWIDTH, 10);
 
-  House();
-  House();
-  House();
-  House();
-  House();
+  for (let i = 0; i < 5 + playerCount; i++){
+    House();
+  }
 };
 
 createNewMap();
@@ -1260,6 +1315,7 @@ Player.onConnect = function(socket) {
     player.team = 'attacker';
     teams.attacker.players.push(player);
   }
+  playerCount++;
 
   socket.on('keyPress', function(data){
     switch (data.inputId) {
@@ -1346,6 +1402,7 @@ Player.getAllInitpack = function(){
 Player.onDisconnect = function(socket){
   let player = Player.list[socket.id];
   teams.removePlayer(player);
+  playerCount--;
   delete Player.list[socket.id];
   removePack.player.push(socket.id);
 };
@@ -1364,22 +1421,12 @@ let teams = {
   attacker: {
     score: 0,
     players: [],
-    spawnArea: {
-      x: 0,
-      y: 0,
-      width: 150,
-      height: MAPHEIGHT
-    }
+    spawnArea: attackerSpawnArea
   },
   defender: {
     score: 0,
     players: [],
-    spawnArea: {
-      x: MAPWIDTH - 150,
-      y: 0,
-      width: 150,
-      height: MAPHEIGHT
-    }
+    spawnArea: defenderSpawnArea
   },
   autoBalance: function () {
     while(teams.attacker.players.length > teams.defender.players.length + 1){
@@ -1744,6 +1791,7 @@ setInterval(function(){
   initPack.bullet = [];
   initPack.wall = [];
   initPack.bomb = undefined;
+  initPack.areas = {};
 
   removePack.player = [];
   removePack.bullet = [];

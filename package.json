@@ -2,7 +2,7 @@
   "name": "onlineshooterio",
   "version": "1.0.0",
   "description": "This project is a Node.JS server that runs a small casual 2D MOBA shooter.",
-  "main": "index.js",
+  "main": "app.js",
   "dependencies": {
     "express": "^4.17.3",
     "mysql": "^2.18.1",
