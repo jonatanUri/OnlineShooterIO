@@ -2,6 +2,9 @@ let socket = io({transports: ['websocket']});
 let display = document.getElementById("display");
 let WIDTH = display.width;
 let HEIGHT = display.height;
+let MINIMAPSCALE = 0.1
+let Xminimap = 10
+let Yminimap = 450
 let ctx = display.getContext("2d");
 ctx.font = "10px Arial";
 
@@ -77,6 +80,7 @@ let DebrisParticle = function(){
     ctx.fillRect(x, y, self.width, self.height);
   };
 
+
   self.update = function () {
     self.speedX /= self.decreaseSpeed;
     self.speedY /= self.decreaseSpeed;
@@ -98,6 +102,10 @@ let Player = function(initPack){
   let self = {};
   self.id =         initPack.id;
   self.name =       initPack.name;
+  self.xp =         initPack.xp;
+  self.level =      initPack.level;
+  self.upgradeCounter = initPack.upgradeCounter;
+  self.avaliableUpgrades = initPack.avaliableUpgrades;
   self.x =          initPack.x;
   self.y =          initPack.y;
   self.width =      initPack.width;
@@ -155,7 +163,7 @@ let Player = function(initPack){
       }
       ctx.fillRect(x - barWidth/2 + self.width/2, y - 10, hpWidth, 4);
       ctx.fillStyle = '#000000' + opacity;
-      ctx.fillText(self.name, x - ctx.measureText(self.name).width/2 + self.width/2, y - 15);
+      ctx.fillText(self.level+" "+self.name, x - ctx.measureText(self.name).width/2 + self.width/2, y - 15);
 
       if (self.team === 'attacker'){
         ctx.fillStyle = '#ed5f2b' + opacity;
@@ -163,6 +171,35 @@ let Player = function(initPack){
         ctx.fillStyle = '#3694c7' + opacity;
       }
       ctx.fillRect(x, y, self.width, self.height);
+    }
+  };
+  self.drawOnMiniMap = function(){
+    if(!self.isDead & self.team === Player.list[selfId].team){
+      let x = Xminimap + self.x * MINIMAPSCALE - self.width * MINIMAPSCALE * 2;
+      let y = Yminimap + self.y * MINIMAPSCALE - self.width * MINIMAPSCALE * 2;
+
+
+      var opacity = 'FF';
+      if (self.isInvisible){
+        if(self.team === Player.list[selfId].team){
+          opacity = '77';
+        } else {
+          opacity = '00';
+        }
+      }
+
+      if (self.team === 'attacker'){
+        ctx.fillStyle = '#ed5f2b' + opacity;
+      } else {
+        ctx.fillStyle = '#3694c7' + opacity;
+      }
+      ctx.fillRect(x, y, self.width * MINIMAPSCALE * 2, self.height * MINIMAPSCALE * 2);
+      if (self.id === selfId) 
+      {
+        ctx.fillStyle = "green"
+        ctx.fillRect(x-2, y-2, self.width * MINIMAPSCALE * 2+2, self.height * MINIMAPSCALE * 2+2);
+
+      }
     }
   };
 
@@ -198,6 +235,14 @@ let Wall = function (initPack) {
     ctx.fillStyle = "#000000";
     ctx.fillRect(x, y, self.width, self.height);
   };
+
+  self.drawOnMiniMap = function () {
+    let x = Xminimap + self.x * MINIMAPSCALE;
+    let y = Yminimap + self.y * MINIMAPSCALE;
+    ctx.fillStyle = "#000000AA";
+    ctx.fillRect(x, y, self.width * MINIMAPSCALE, self.height * MINIMAPSCALE);
+  }
+
 
   Wall.list[self.id] = self;
   return self;
@@ -305,6 +350,18 @@ socket.on("update", function(data){
       }
       if(packet.y !== undefined){
         player.y = packet.y;
+      }
+      if(packet.xp !== undefined){
+        player.xp = packet.xp;
+      }
+      if(packet.level !== undefined){
+        player.level = packet.level;
+      }
+      if(packet.upgradeCounter !== undefined){
+        player.upgradeCounter = packet.upgradeCounter;
+      }
+      if(packet.avaliableUpgrades !== undefined){
+        player.avaliableUpgrades = packet.avaliableUpgrades;
       }
       if(packet.width !== undefined){
         player.width = packet.width;
@@ -459,8 +516,16 @@ setInterval(function(){
   drawWallShadow();
   for(let i in Wall.list){
     Wall.list[i].draw();
+    Wall.list[i].drawOnMiniMap();
+  }
+  drawAreasOnMinimap();
+
+  for(let i in Player.list){
+    Player.list[i].drawOnMiniMap();
   }
 
+  drawXP();
+  drawLevelUP();
   drawScore();
   drawPosition();
   drawTeamScore();
@@ -726,6 +791,7 @@ let drawBomb = function () {
 let bombColor = "#FF0000";
 let bombColorCounter = 255;
 let bombSound = new Audio('../client/audio/bombSound.mp3');
+bombSound.volume = 0.2;
 setInterval(function () {
   if (bomb !== undefined && !bomb.defused){
     let counterMinus = Math.floor(bomb.timer / bomb.timeToExplode * 25);
@@ -785,6 +851,24 @@ let drawAreas = function () {
                 areas.plantB.y - Player.list[selfId].y + HEIGHT/2,
                    areas.plantB.width, areas.plantB.height);
 };
+let drawAreasOnMinimap = function () {
+  ctx.fillStyle = '#ed5f2b30';
+  ctx.fillRect(Xminimap + areas.attacker.x * MINIMAPSCALE,
+               Yminimap + areas.attacker.y * MINIMAPSCALE,
+                          areas.attacker.width * MINIMAPSCALE, areas.attacker.height * MINIMAPSCALE);
+  ctx.fillStyle = '#3694c730';
+  ctx.fillRect(Xminimap + areas.defender.x * MINIMAPSCALE,
+               Yminimap + areas.defender.y * MINIMAPSCALE,
+                          areas.defender.width * MINIMAPSCALE, areas.defender.height * MINIMAPSCALE);
+  ctx.fillStyle = '#D8181870';
+  ctx.fillRect( Xminimap + areas.plantA.x * MINIMAPSCALE,
+                Yminimap + areas.plantA.y * MINIMAPSCALE,
+                   areas.plantA.width * MINIMAPSCALE, areas.plantA.height * MINIMAPSCALE);
+  ctx.fillRect( Xminimap + areas.plantB.x * MINIMAPSCALE,
+                Yminimap + areas.plantB.y * MINIMAPSCALE,
+                   areas.plantB.width * MINIMAPSCALE, areas.plantB.height * MINIMAPSCALE);
+
+}
 
 let drawScore = function(){
   ctx.fillStyle = '#404040';
@@ -866,6 +950,44 @@ let drawRoundTime = function () {
   }
 
 };
+
+let xpTextB = document.getElementById("currentXPText")
+let infoTextB = document.getElementById("XPinfoText")
+let drawXP = function () {
+  xpTextB.innerText = Player.list[selfId].xp
+  if (Player.list[selfId].xp >= 10){
+    infoTextB.innerHTML = "Level up at end of the round"
+  }
+}
+let levelUPDiv = document.getElementById("levelUP")
+let drawLevelUP = function () {
+  if (Player.list[selfId].upgradeCounter < 1) {
+    levelUPDiv.innerHTML = ""
+  }
+  else {
+    if (levelUPDiv.childElementCount<3) {
+
+      let choise0 = document.createElement("button");
+      choise0.innerText = Player.list[selfId].avaliableUpgrades[0].text
+      choise0.onclick = function () {
+        socket.emit("levelup", 0)
+      }
+      let choise1 = document.createElement("button");
+      choise1.innerText = Player.list[selfId].avaliableUpgrades[1].text
+      choise1.onclick = function () {
+        socket.emit("levelup", 1)
+      }
+      let choise2 = document.createElement("button");
+      choise2.innerText = Player.list[selfId].avaliableUpgrades[2].text
+      choise2.onclick = function () {
+        socket.emit("levelup", 2)
+      }
+      levelUPDiv.appendChild(choise0)
+      levelUPDiv.appendChild(choise1)
+      levelUPDiv.appendChild(choise2)
+    }
+  }
+}
 
 let hpBarWidth = 150;
 let hpBarHeight = 15;
