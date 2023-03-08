@@ -14,8 +14,8 @@ app.use('/client', express.static(__dirname + '/client/audio'));
 serv.listen(2000);
 
 (async () => {
-    console.log("Server runs on: " + await publicIp.v4() + ":8000 (public)");
-    console.log("Or: " + localIp.address() + ":8000 (local)")
+    console.log("Server runs on: " + await publicIp.v4() + ":2000 (public)");
+    console.log("Or: " + localIp.address() + ":2000 (local)")
 })();
 
 let SOCKET_LIST = {};
@@ -1129,27 +1129,39 @@ let Player = function(id){
     }
   };
 
+  self.timeoutId = null
   self.reSpawn = function () {
-    self.speedX = 0;
-    self.speedY = 0;
-    self.hp = self.hpMax;
-    self.isDead = false;
-    self.stamina = self.maxStamina;
-    self.ammo = self.maxAmmo;
-    self.isReloading = false;
-    self.reloadTimer = 0;
-    self.specQTimer = self.specQCD;
-    self.specETimer = self.specECD;
-    if(self.team === 'attacker'){
-      do {
-        self.x = Math.random() * areas.attacker.width + areas.attacker.x;
-        self.y = Math.random() * areas.attacker.height + areas.attacker.y
-      } while (!self.isInsideRect(areas.attacker));
-    } else {
-      do {
-        self.x = Math.random() * areas.defender.width + areas.defender.x;
-        self.y = Math.random() * areas.defender.height + areas.defender.y;
-      } while (!self.isInsideRect(areas.defender));
+    if (!self.timeoutId) {
+      self.timeoutId = setTimeout(() => {
+        self.handleClassChange();
+        self.speedX = 0;
+        self.speedY = 0;
+        self.hp = self.hpMax;
+        self.isDead = false;
+        self.stamina = self.maxStamina;
+        self.ammo = self.maxAmmo;
+        self.isReloading = false;
+        self.reloadTimer = 0;
+        self.specQTimer = self.specQCD;
+        self.specETimer = self.specECD;
+        if(self.team === 'attacker'){
+          do {
+            self.x = Math.random() * areas.attacker.width + areas.attacker.x;
+            self.y = Math.random() * areas.attacker.height + areas.attacker.y
+          } while (!self.isInsideRect(areas.attacker));
+        } else if (self.team === 'defender') {
+          do {
+            self.x = Math.random() * areas.defender.width + areas.defender.x;
+            self.y = Math.random() * areas.defender.height + areas.defender.y;
+          } while (!self.isInsideRect(areas.defender));
+        } else {
+          self.x = Math.random() * MAPWIDTH;
+          self.y = Math.random() * MAPHEIGHT;
+        }
+        
+
+        self.timeoutId = null;
+      },2000);
     }
   };
 
@@ -1308,13 +1320,19 @@ Player.onConnect = function(socket) {
       break;
     }
   }
-  if(teams.attacker.players.length > teams.defender.players.length){
-    player.team = 'defender';
-    teams.defender.players.push(player);
-  }else {
-    player.team = 'attacker';
-    teams.attacker.players.push(player);
+  if (round.selectedType == "base") {
+    if(teams.attacker.players.length > teams.defender.players.length){
+      player.team = 'defender';
+      teams.defender.players.push(player);
+    }else {
+      player.team = 'attacker';
+      teams.attacker.players.push(player);
+    }
   }
+  if (round.selectedType == "ffa") {
+    player.team = playerCount
+  }
+
   playerCount++;
 
   socket.on('keyPress', function(data){
@@ -1495,7 +1513,7 @@ let round = {
   isRestarting: false,
 
 
-  selectedType: "base", 
+  selectedType: "ffa", 
 
   gameTypes: {
     "base" : {
@@ -1521,6 +1539,7 @@ let round = {
         bomb = undefined;
         round.isFinished = false;
         round.isRestarting = false;
+        round.maxTime = 200;
         round.timer = round.maxTime;
     
         teams.autoBalance();
@@ -1533,6 +1552,47 @@ let round = {
         }
     
         createNewMap();
+      }
+    },
+    "ffa": {
+      update: function () {
+        if (round.timer <= 0){
+          teams.handleDefenderWin();
+        }
+        
+        for (let i in Player.list){
+          if (Player.list[i].isDead)
+            Player.list[i].reSpawn();
+        }
+
+        handleLevelUp()
+
+      },
+      startNewRound: function () {
+        round.counter++;
+    
+        bomb = undefined;
+        round.isFinished = false;
+        round.isRestarting = false;
+        round.timer = 600;
+        round.maxTime = 600;
+    
+        for (let i in Player.list){
+          Player.list[i].reSpawn();
+        }
+        for (let i in Bullet.list){
+          Bullet.list[i].toRemove = true;
+        }
+    
+        createNewMap();
+        areas.plantA.x = 0
+        areas.plantA.y = 0
+        areas.plantA.height = 0
+        areas.plantA.width = 0
+        areas.plantB.x = 0
+        areas.plantB.y = 0
+        areas.plantB.height = 0
+        areas.plantB.width = 0
       }
     }
   },
@@ -1721,6 +1781,25 @@ io.sockets.on('connection', function(socket){
 
 });
 
+function handleLevelUp() {
+  for (let i in Player.list) {
+    while (Player.list[i].xp > 9) {
+      Player.list[i].xp -= 10;
+      Player.list[i].level++;
+
+      Player.list[i].upgradeCounter++;
+
+      while (Player.list[i].avaliableUpgrades.length < 3) {
+
+        randomItem = LevelUPCards[Math.floor(Math.random() * LevelUPCards.length)];
+        if (!Player.list[i].avaliableUpgrades.includes(randomItem)) {
+          Player.list[i].avaliableUpgrades.push(randomItem);
+        }
+      }
+    }
+  }
+}
+
 setInterval(function(){
   let updatePack = {
     player: Player.update(),
@@ -1732,26 +1811,11 @@ setInterval(function(){
 
   if(!round.isRestarting){
     round.gameTypes[round.selectedType].update();
+
     if(round.isFinished){
       round.isRestarting = true;
       
-      for (let i in Player.list){
-        while (Player.list[i].xp>9) {
-          Player.list[i].xp-=10
-          Player.list[i].level++;
-
-          Player.list[i].upgradeCounter++;
-
-          while (Player.list[i].avaliableUpgrades.length<3){
-
-            randomItem = LevelUPCards[Math.floor(Math.random()*LevelUPCards.length)]
-            if (!Player.list[i].avaliableUpgrades.includes(randomItem)) {
-              Player.list[i].avaliableUpgrades.push(randomItem)
-            }
-          }
-        }
-      }
-
+      handleLevelUp();
       setTimeout(round.gameTypes[round.selectedType].startNewRound, 8000) ;
     }
   }
@@ -1776,6 +1840,8 @@ setInterval(function(){
   removePack.bullet = [];
   removePack.wall = [];
 
+
+  
 }, 1000/40);
 
 setInterval(function () {

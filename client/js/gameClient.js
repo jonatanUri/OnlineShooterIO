@@ -165,10 +165,10 @@ let Player = function(initPack){
       ctx.fillStyle = '#000000' + opacity;
       ctx.fillText(self.level+" "+self.name, x - ctx.measureText(self.level+" "+self.name).width/2 + self.width/2, y - 15);
 
-      if (self.team === 'attacker'){
-        ctx.fillStyle = '#ed5f2b' + opacity;
-      } else {
+      if (self.team === 'defender'){
         ctx.fillStyle = '#3694c7' + opacity;
+      } else {
+        ctx.fillStyle = '#ed5f2b' + opacity;
       }
       ctx.fillRect(x, y, self.width, self.height);
     }
