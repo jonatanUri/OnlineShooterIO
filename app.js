@@ -603,6 +603,18 @@ let LevelUPCards = [
     }
   },
   {
+    text: "+HP Regen",
+    doUpgrade: function (player) {
+      player.regenaration += 0.1
+    }
+  },
+  {
+    text: "+LifeSteal",
+    doUpgrade: function (player) {
+      player.lifeSteal += 0.05
+    }
+  },
+  {
     text: "+RELOAD",
     doUpgrade: function (player) {
       player.reloadTime /= 1.2
@@ -674,6 +686,7 @@ let Player = function(id){
   self.height =         20;
   self.hp =             100;
   self.hpMax =          100;
+  self.regenaration =   0.05;
   self.isDead =         true;
   self.score =          0;
   self.killCount =      0;
@@ -706,6 +719,7 @@ let Player = function(id){
   self.bulletSpeed =    8;
   self.bulletSize =     5;
   self.bulletCount =    1;
+  self.lifeSteal =      0;
   self.reloadTimer =    0;
   self.reloadTime =     1000 / 10;
   self.isReloading =    false;
@@ -732,6 +746,10 @@ let Player = function(id){
       self.handleWallCollision();
       self.updateCanInteract();
       self.updateInteracting();
+
+      if (self.hp<self.hpMax) {
+        self.hp += self.regenaration
+      }
 
       self.attackTimer++;
       if (self.pressingAttack &&
@@ -1079,6 +1097,9 @@ let Player = function(id){
         !self.pressingLeft && !self.pressingUp &&
         self.stamina < self.maxStamina){
       self.stamina++;
+    } else if (!self.pressingShift&&
+      self.stamina < self.maxStamina) {
+      self.stamina+=0.15;
     }
 
     if(self.pressingRight){
@@ -1692,6 +1713,7 @@ let Bullet = function(parent, angle){
           }
           if (isOpponent){
             player.hp -= self.damage;
+            shooter.hp += self.damage * shooter.lifeSteal
             if (!player.damagedBy.includes(shooter))
               player.damagedBy.push(shooter)
             if (player.hp<0){
