@@ -1313,6 +1313,8 @@ Player.list = {};
 
 Player.onConnect = function(socket) {
   let player = Player(socket.id);
+  playerCount++;
+
   for (let i in Player.list){
     if (Player.list[i].id !== socket.id && !Player.list[i].isDead){
       player.x = Player.list[i].x;
@@ -1330,10 +1332,9 @@ Player.onConnect = function(socket) {
     }
   }
   if (round.selectedType == "ffa") {
-    player.team = playerCount
+    player.team = Math.random()
   }
 
-  playerCount++;
 
   socket.on('keyPress', function(data){
     switch (data.inputId) {
