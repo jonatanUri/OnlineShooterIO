@@ -102,6 +102,22 @@ let Entity = function(){
     return (self.isInsideRect(areas.plantA) || self.isInsideRect(areas.plantB));
   };
 
+  self.isNearToOtherPlayer = function(){
+    for (let i in Player.list){
+      let prop = {
+        x: Player.list[i].x - 400,
+        y: Player.list[i].y - 400,
+        width: Player.list[i].width + 800,
+        height: Player.list[i].height + 800
+      }
+    
+      if (self.isInsideRect(prop)) {
+        return true;
+      }
+    };
+    return false;
+  };
+
   self.getDistance = function(pt){
     let distance = Math.sqrt(Math.pow(self.x + (self.width/2) - pt.x + (pt.width/2), 2) +
                                 Math.pow(self.y + (self.height/2) - pt.y + (pt.height/2), 2));
@@ -1155,9 +1171,11 @@ let Player = function(id){
             self.y = Math.random() * areas.defender.height + areas.defender.y;
           } while (!self.isInsideRect(areas.defender));
         } else {
-          self.x = Math.random() * MAPWIDTH;
-          self.y = Math.random() * MAPHEIGHT;
-        }
+          do {
+            self.x = Math.random() * MAPWIDTH;
+            self.y = Math.random() * MAPHEIGHT;
+          } while (!self.isNearToOtherPlayer());
+      }
         
 
         self.timeoutId = null;
